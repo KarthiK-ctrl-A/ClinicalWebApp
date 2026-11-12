@@ -11,10 +11,7 @@ import { AuthRepository } from './repositories/auth.repository';
 
   controllers: [AuthController],
 
-  providers: [
-    AuthService,
-    AuthRepository,
-  ],
+  providers: [AuthService, AuthRepository],
 
   exports: [AuthService],
 })

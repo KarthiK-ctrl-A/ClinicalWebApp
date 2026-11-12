@@ -16,9 +16,7 @@ async function bootstrap() {
   app.use(helmet());
 
   app.enableCors({
-    origin: config.getOrThrow<string>(
-      'FRONTEND_URL',
-    ),
+    origin: config.getOrThrow<string>('FRONTEND_URL'),
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
   });
 

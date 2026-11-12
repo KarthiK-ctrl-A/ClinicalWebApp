@@ -14,6 +14,10 @@ import { PatientsModule } from './modules/patients/patients.module';
 
 import { HealthModule } from './modules/health/health.module';
 
+import { MedicalRecordsModule } from './modules/medical-records/medical-records.module';
+
+import { PrescriptionsModule } from './modules/prescriptions/prescriptions.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -24,32 +28,25 @@ import { HealthModule } from './modules/health/health.module';
           .valid('development', 'test', 'production')
           .default('development'),
 
-        PORT: Joi.number()
-          .port()
-          .default(3001),
+        PORT: Joi.number().port().default(3001),
 
-        FRONTEND_URL: Joi.string()
-          .uri()
-          .required(),
+        FRONTEND_URL: Joi.string().uri().required(),
 
-        SUPABASE_URL: Joi.string()
-          .uri()
-          .required(),
+        SUPABASE_URL: Joi.string().uri().required(),
 
-        SUPABASE_PUBLISHABLE_KEY: Joi.string()
-          .required(),
+        SUPABASE_PUBLISHABLE_KEY: Joi.string().required(),
 
-        SUPABASE_SECRET_KEY: Joi.string()
-          .optional(),
+        SUPABASE_SECRET_KEY: Joi.string().optional(),
 
-        DEMO_PASSWORD: Joi.string()
-          .optional(),
+        DEMO_PASSWORD: Joi.string().optional(),
       }).unknown(true),
     }),
 
     AuthModule,
     PatientsModule,
     HealthModule,
+    MedicalRecordsModule,
+    PrescriptionsModule,
   ],
 
   providers: [

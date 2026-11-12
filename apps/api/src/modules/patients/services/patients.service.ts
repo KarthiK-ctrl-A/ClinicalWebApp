@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { AuthenticatedUser } from '../../../common/interfaces/authenticated-user.interface';
 
@@ -17,37 +14,26 @@ import { PatientsRepository } from '../repositories/patients.repository';
 
 @Injectable()
 export class PatientsService {
-  constructor(
-    private readonly patientsRepository: PatientsRepository,
-  ) {}
+  constructor(private readonly patientsRepository: PatientsRepository) {}
 
-  async findAll(
-    doctor: AuthenticatedUser,
-    query: ListPatientsDto,
-  ) {
-    const offset =
-      (query.page - 1) * query.pageSize;
+  async findAll(doctor: AuthenticatedUser, query: ListPatientsDto) {
+    const offset = (query.page - 1) * query.pageSize;
 
-    const result =
-      await this.patientsRepository.findAssigned(
-        doctor.id,
-        doctor.accessToken,
-        offset,
-        query.pageSize,
-      );
+    const result = await this.patientsRepository.findAssigned(
+      doctor.id,
+      doctor.accessToken,
+      offset,
+      query.pageSize,
+    );
 
     return {
-      data: result.records.map((record) =>
-        this.toSummary(record),
-      ),
+      data: result.records.map((record) => this.toSummary(record)),
 
       pagination: {
         page: query.page,
         pageSize: query.pageSize,
         total: result.total,
-        totalPages: Math.ceil(
-          result.total / query.pageSize,
-        ),
+        totalPages: Math.ceil(result.total / query.pageSize),
       },
     };
   }
@@ -56,17 +42,14 @@ export class PatientsService {
     patientId: string,
     doctor: AuthenticatedUser,
   ): Promise<PatientDetails> {
-    const patient =
-      await this.patientsRepository.findAssignedById(
-        patientId,
-        doctor.id,
-        doctor.accessToken,
-      );
+    const patient = await this.patientsRepository.findAssignedById(
+      patientId,
+      doctor.id,
+      doctor.accessToken,
+    );
 
     if (!patient) {
-      throw new NotFoundException(
-        'Patient not found',
-      );
+      throw new NotFoundException('Patient not found');
     }
 
     return {
@@ -76,9 +59,7 @@ export class PatientsService {
     };
   }
 
-  private toSummary(
-    patient: PatientRecord,
-  ): PatientSummary {
+  private toSummary(patient: PatientRecord): PatientSummary {
     return {
       id: patient.id,
       fullName: patient.profile?.full_name ?? '',
