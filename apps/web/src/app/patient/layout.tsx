@@ -16,6 +16,10 @@ import { createClient } from '@/lib/supabase/client';
 
 import { CurrentUser } from '@/types/clinic';
 
+import { IncomingCallCenter } from '@/features/calls/components/incoming-call-center';
+
+import Link from 'next/link';
+
 export default function PatientLayout({
   children,
 }: {
@@ -92,6 +96,22 @@ export default function PatientLayout({
             </p>
           </div>
 
+          <nav className="flex items-center gap-5">
+              <Link
+                href="/patient"
+                className="text-sm font-medium hover:text-blue-600"
+              >
+                Dashboard
+              </Link>
+
+              <Link
+                href="/patient/messages"
+                className="text-sm font-medium hover:text-blue-600"
+              >
+                Messages
+              </Link>
+            </nav>
+
           <Button
             variant="outline"
             onClick={handleLogout}
@@ -104,6 +124,8 @@ export default function PatientLayout({
       <main className="mx-auto max-w-6xl p-6">
         {children}
       </main>
+
+      <IncomingCallCenter key={patient.id} />
     </div>
   );
 }

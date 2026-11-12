@@ -50,7 +50,7 @@ export default function LoginPage() {
       }
 
     if (user.role === 'patient') {
-          window.location.replace('/patient/messages');
+          window.location.replace('/patient');
         return;
     }
 

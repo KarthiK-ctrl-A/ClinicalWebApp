@@ -20,6 +20,8 @@ import { PrescriptionsModule } from './modules/prescriptions/prescriptions.modul
 
 import { MessagingModule } from './modules/messaging/messaging.module';
 
+import { CallsModule } from './modules/calls/calls.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -41,6 +43,17 @@ import { MessagingModule } from './modules/messaging/messaging.module';
         SUPABASE_SECRET_KEY: Joi.string().optional(),
 
         DEMO_PASSWORD: Joi.string().optional(),
+        
+        CLOUDFLARE_ACCOUNT_ID: Joi.string().required(),
+
+        CLOUDFLARE_REALTIMEKIT_APP_ID: Joi.string().required(),
+
+        CLOUDFLARE_API_TOKEN: Joi.string().required(),
+
+        CLOUDFLARE_AUDIO_PRESET: Joi.string().required(),
+
+        CLOUDFLARE_VIDEO_PRESET: Joi.string().required(),
+
       }).unknown(true),
     }),
 
@@ -50,6 +63,7 @@ import { MessagingModule } from './modules/messaging/messaging.module';
     MedicalRecordsModule,
     PrescriptionsModule,
     MessagingModule,
+    CallsModule,
   ],
 
   providers: [

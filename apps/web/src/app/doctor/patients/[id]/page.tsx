@@ -12,6 +12,9 @@ import { clinicApi } from '@/lib/api/clinic-api';
 import { PrescriptionForm } from '@/components/doctor/prescription-form';
 import { MessageThread } from '@/features/messaging/components/message-thread';
 
+import { CallActions } from '@/features/calls/components/call-actions';
+import { CallHistory } from '@/features/calls/components/call-history';
+
 import {
   PatientDetails,
   PatientRecords,
@@ -174,6 +177,16 @@ export default function PatientDetailsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <CallActions
+          key={id}
+          patientId={id}
+      />
+
+      <CallHistory
+        key={`history-${id}`}
+        patientId={id}
+      />
 
       {/* Medical records */}
 
