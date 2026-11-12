@@ -10,25 +10,19 @@ import type { PatientRecord } from '../interfaces/patient.interface';
 
 @Injectable()
 export class PatientsRepository {
-  private readonly logger =
-    new Logger(PatientsRepository.name);
+  private readonly logger = new Logger(PatientsRepository.name);
 
   private normalizeProfile(
-  profile:
-    | { full_name: string }
-    | { full_name: string }[]
-    | null,
-): { full_name: string } | null {
-  if (Array.isArray(profile)) {
-    return profile[0] ?? null;
+    profile: { full_name: string } | { full_name: string }[] | null,
+  ): { full_name: string } | null {
+    if (Array.isArray(profile)) {
+      return profile[0] ?? null;
+    }
+
+    return profile;
   }
 
-  return profile;
-}
-
-  constructor(
-    private readonly supabase: SupabaseService,
-  ) {}
+  constructor(private readonly supabase: SupabaseService) {}
 
   async findAssigned(
     doctorId: string,
@@ -58,20 +52,16 @@ export class PatientsRepository {
       .range(offset, offset + limit - 1);
 
     if (error) {
-      this.logger.error(
-        `Patient list query failed: ${error.code}`,
-      );
+      this.logger.error(`Patient list query failed: ${error.code}`);
 
-      throw new InternalServerErrorException(
-        'Unable to retrieve patients',
-      );
+      throw new InternalServerErrorException('Unable to retrieve patients');
     }
 
     return {
       records: (data ?? []).map((patient) => ({
         ...patient,
         profile: this.normalizeProfile(patient.profile),
-    })),
+      })),
       total: count ?? 0,
     };
   }
@@ -104,9 +94,7 @@ export class PatientsRepository {
       .maybeSingle();
 
     if (error) {
-      this.logger.error(
-        `Patient detail query failed: ${error.code}`,
-      );
+      this.logger.error(`Patient detail query failed: ${error.code}`);
 
       throw new InternalServerErrorException(
         'Unable to retrieve patient details',
@@ -114,12 +102,12 @@ export class PatientsRepository {
     }
 
     if (!data) {
-  return null;
-}
+      return null;
+    }
 
-return {
-  ...data,
-  profile: this.normalizeProfile(data.profile),
-};
+    return {
+      ...data,
+      profile: this.normalizeProfile(data.profile),
+    };
   }
 }

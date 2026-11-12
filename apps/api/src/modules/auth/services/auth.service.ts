@@ -20,11 +20,8 @@ export class AuthService {
     private readonly authRepository: AuthRepository,
   ) {}
 
-  async authenticate(
-    accessToken: string,
-  ): Promise<AuthenticatedUser> {
-    const { data, error } =
-      await this.supabase.verifyToken(accessToken);
+  async authenticate(accessToken: string): Promise<AuthenticatedUser> {
+    const { data, error } = await this.supabase.verifyToken(accessToken);
 
     if (error || !data.user) {
       throw new UnauthorizedException(
@@ -32,25 +29,17 @@ export class AuthService {
       );
     }
 
-    const profile =
-      await this.authRepository.findProfileById(
-        data.user.id,
-        accessToken,
-      );
+    const profile = await this.authRepository.findProfileById(
+      data.user.id,
+      accessToken,
+    );
 
     if (!profile) {
-      throw new ForbiddenException(
-        'User profile is not configured',
-      );
+      throw new ForbiddenException('User profile is not configured');
     }
 
-    if (
-      profile.role !== 'doctor' &&
-      profile.role !== 'patient'
-    ) {
-      throw new ForbiddenException(
-        'Invalid user role',
-      );
+    if (profile.role !== 'doctor' && profile.role !== 'patient') {
+      throw new ForbiddenException('Invalid user role');
     }
 
     return {

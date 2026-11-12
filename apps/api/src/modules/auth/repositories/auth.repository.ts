@@ -1,20 +1,12 @@
-import {
-  Injectable,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 
 import { SupabaseService } from '../../../database/supabase.service';
 
 @Injectable()
 export class AuthRepository {
-  constructor(
-    private readonly supabase: SupabaseService,
-  ) {}
+  constructor(private readonly supabase: SupabaseService) {}
 
-  async findProfileById(
-    userId: string,
-    accessToken: string,
-  ) {
+  async findProfileById(userId: string, accessToken: string) {
     const client = this.supabase.forUser(accessToken);
 
     const { data, error } = await client
@@ -24,9 +16,7 @@ export class AuthRepository {
       .maybeSingle();
 
     if (error) {
-      throw new ServiceUnavailableException(
-        'Unable to retrieve user profile',
-      );
+      throw new ServiceUnavailableException('Unable to retrieve user profile');
     }
 
     return data;

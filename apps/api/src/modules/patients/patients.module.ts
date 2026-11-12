@@ -13,10 +13,7 @@ import { PatientsRepository } from './repositories/patients.repository';
 
   controllers: [PatientsController],
 
-  providers: [
-    PatientsService,
-    PatientsRepository,
-  ],
+  providers: [PatientsService, PatientsRepository],
 
   exports: [PatientsService],
 })

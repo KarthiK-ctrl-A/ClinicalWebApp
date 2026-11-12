@@ -7,9 +7,7 @@ import type { AuthenticatedUser } from '../../../common/interfaces/authenticated
 @Controller('me')
 export class AuthController {
   @Get()
-  getCurrentUser(
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
+  getCurrentUser(@CurrentUser() user: AuthenticatedUser) {
     return {
       id: user.id,
       email: user.email,
