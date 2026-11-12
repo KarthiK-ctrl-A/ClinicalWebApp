@@ -18,6 +18,8 @@ import { MedicalRecordsModule } from './modules/medical-records/medical-records.
 
 import { PrescriptionsModule } from './modules/prescriptions/prescriptions.module';
 
+import { MessagingModule } from './modules/messaging/messaging.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -47,6 +49,7 @@ import { PrescriptionsModule } from './modules/prescriptions/prescriptions.modul
     HealthModule,
     MedicalRecordsModule,
     PrescriptionsModule,
+    MessagingModule,
   ],
 
   providers: [

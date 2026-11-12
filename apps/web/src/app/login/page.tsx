@@ -44,15 +44,20 @@ export default function LoginPage() {
         '/api/v1/me',
       );
 
-      if (user.role !== 'doctor') {
-        await supabase.auth.signOut();
-
-        throw new Error(
-          'This portal is available to doctors only.',
-        );
+      if (user.role === 'doctor') {
+          window.location.replace('/doctor/patients');
+        return;
       }
 
-      window.location.replace('/doctor/patients');
+    if (user.role === 'patient') {
+          window.location.replace('/patient/messages');
+        return;
+    }
+
+    await supabase.auth.signOut();
+
+    throw new Error('Unsupported user role');
+
     } catch (err) {
       setError(
         err instanceof Error

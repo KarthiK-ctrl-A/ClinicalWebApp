@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { clinicApi } from '@/lib/api/clinic-api';
 
 import { PrescriptionForm } from '@/components/doctor/prescription-form';
+import { MessageThread } from '@/features/messaging/components/message-thread';
 
 import {
   PatientDetails,
@@ -197,6 +198,11 @@ export default function PatientDetailsPage() {
               <TabsTrigger value="medications">
                 Medications
               </TabsTrigger>
+
+              <TabsTrigger value="messages">
+                Messages
+              </TabsTrigger>  
+
             </TabsList>
 
             {/* LAB RESULTS */}
@@ -350,6 +356,18 @@ export default function PatientDetailsPage() {
                 onCreated={refreshPrescriptions}
               />
             </TabsContent>
+
+            {/* MESSAGES */}
+            {/* DOCTOR-PATIENT MESSAGING */}
+
+            <TabsContent value="messages" className="mt-6">
+              <MessageThread
+                key={id}
+                mode="doctor"
+                patientId={id}
+              />
+            </TabsContent>
+
           </Tabs>
         </CardContent>
       </Card>

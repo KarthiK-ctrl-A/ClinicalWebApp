@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException,ForbiddenException } from '@nestjs/common';
 
 import { AuthenticatedUser } from '../../../common/interfaces/authenticated-user.interface';
 
@@ -58,6 +58,31 @@ export class PatientsService {
       medicalNotes: patient.medical_notes ?? null,
     };
   }
+
+  async findOwnPatient(user: AuthenticatedUser) {
+  if (user.role !== 'patient') {
+    throw new ForbiddenException(
+      'Patient access required',
+    );
+  }
+
+  const patient =
+    await this.patientsRepository.findByUserId(
+      user.id,
+      user.accessToken,
+    );
+
+  if (!patient) {
+    throw new NotFoundException(
+      'Patient record not found',
+    );
+  }
+
+  return {
+    id: patient.id,
+    doctorId: patient.doctor_id,
+  };
+}
 
   private toSummary(patient: PatientRecord): PatientSummary {
     return {
