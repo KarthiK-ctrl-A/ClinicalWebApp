@@ -37,4 +37,22 @@ export class SupabaseService {
       },
     );
   }
+
+  private adminClient?: SupabaseClient;
+  admin(): SupabaseClient {
+    if (!this.adminClient) {
+      this.adminClient = createClient(
+        this.config.getOrThrow<string>('SUPABASE_URL'),
+        this.config.getOrThrow<string>('SUPABASE_SECRET_KEY'),
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+            detectSessionInUrl: false,
+          },
+        },
+      );
+    }
+    return this.adminClient;
+  }
 }
