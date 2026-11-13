@@ -272,17 +272,21 @@ export class CallsService {
       );
 
     if (existingParticipantId) {
-      const token =
-        await this.cloudflare.refreshParticipantToken(
-          call.cloudflare_meeting_id,
-          existingParticipantId,
-        );
+  this.logger.debug(
+    `Refreshing existing participant for ${call.call_type} call`,
+  );
 
-      return {
-        callId: call.id,
-        token,
-      };
-    }
+  const token =
+    await this.cloudflare.refreshParticipantToken(
+      call.cloudflare_meeting_id,
+      existingParticipantId,
+    );
+
+  return {
+    callId: call.id,
+    token,
+  };
+}
 
     const participant =
       await this.cloudflare.addParticipant(

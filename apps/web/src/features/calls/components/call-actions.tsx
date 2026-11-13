@@ -230,55 +230,17 @@ async function cancelCall() {
     </div>
   ) : (
     <CallRoom
-      key={call.id}
-      callId={call.id}
-      onExit={() => setMinimized(true)}
-      onEnded={() => {
-        setCall(null);
-        setMinimized(false);
-      }}
-    />
-  )
-)}
-
-      {(call?.status === 'accepted' ||
-  call?.status === 'active') && (
-  minimized ? (
-    <div className="space-y-3 rounded-lg border p-5">
-      <h3 className="font-semibold">
-        Consultation in Progress
-      </h3>
-
-      <p className="text-sm text-slate-500">
-        The consultation is open.
-        You can retry joining or end it.
-      </p>
-
-      <div className="flex gap-3">
-        <Button
-          onClick={() => setMinimized(false)}
-        >
-          Rejoin Consultation
-        </Button>
-
-        <Button
-          variant="destructive"
-          onClick={() => void cancelCall()}
-        >
-          End Call
-        </Button>
-      </div>
-    </div>
-  ) : (
-    <CallRoom
-      key={call.id}
-      callId={call.id}
-      onExit={() => setMinimized(true)}
-      onEnded={() => {
-        setCall(null);
-        setMinimized(false);
-      }}
-    />
+  key={call.id}
+  callId={call.id}
+  callType={call.callType}
+  onExit={() => {
+    setMinimized(true);
+  }}
+  onEnded={() => {
+    setCall(null);
+    setMinimized(false);
+  }}
+/>
   )
 )}
 
