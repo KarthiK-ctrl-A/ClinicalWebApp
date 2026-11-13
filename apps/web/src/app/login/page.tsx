@@ -1,7 +1,8 @@
 'use client';
 
+import { getErrorMessage } from '@/lib/error-message';
+
 import { FormEvent, useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,8 +15,6 @@ import { clinicApi } from '@/lib/api/clinic-api';
 import { CurrentUser } from '@/types/clinic';
 
 export default function LoginPage() {
-  const router = useRouter();
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -30,40 +29,32 @@ export default function LoginPage() {
     try {
       const supabase = createClient();
 
-      const { error: authError } =
-        await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
       if (authError) {
         throw authError;
       }
 
-      const user = await clinicApi<CurrentUser>(
-        '/api/v1/me',
-      );
+      const user = await clinicApi<CurrentUser>('/api/v1/me');
 
       if (user.role === 'doctor') {
-          window.location.replace('/doctor/patients');
+        window.location.replace('/doctor/patients');
         return;
       }
 
-    if (user.role === 'patient') {
-          window.location.replace('/patient');
+      if (user.role === 'patient') {
+        window.location.replace('/patient');
         return;
-    }
+      }
 
-    await supabase.auth.signOut();
+      await supabase.auth.signOut();
 
-    throw new Error('Unsupported user role');
-
+      throw new Error('Unsupported user role');
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Unable to sign in',
-      );
+      setError(getErrorMessage(err, 'Unable to sign in'));
     } finally {
       setLoading(false);
     }
@@ -73,13 +64,9 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader>
-          <CardTitle className="text-2xl">
-            Clinic Portal
-          </CardTitle>
+          <CardTitle className="text-2xl">Clinic Portal</CardTitle>
 
-          <p className="text-sm text-slate-500">
-            Sign in to access your patients.
-          </p>
+          <p className="text-sm text-slate-500">Sign in to access your patients.</p>
         </CardHeader>
 
         <CardContent>
@@ -92,9 +79,7 @@ export default function LoginPage() {
                 type="email"
                 autoComplete="username"
                 value={email}
-                onChange={(event) =>
-                  setEmail(event.target.value)
-                }
+                onChange={(event) => setEmail(event.target.value)}
                 required
               />
             </div>
@@ -107,9 +92,7 @@ export default function LoginPage() {
                 type="password"
                 autoComplete="current-password"
                 value={password}
-                onChange={(event) =>
-                  setPassword(event.target.value)
-                }
+                onChange={(event) => setPassword(event.target.value)}
                 required
               />
             </div>
@@ -120,11 +103,7 @@ export default function LoginPage() {
               </p>
             )}
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={loading}
-            >
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>

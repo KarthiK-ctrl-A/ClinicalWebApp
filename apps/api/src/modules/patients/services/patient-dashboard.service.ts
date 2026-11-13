@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { AuthenticatedUser } from '../../../common/interfaces/authenticated-user.interface';
 
@@ -20,22 +17,26 @@ export class PatientDashboardService {
     // Resolve the patient record using the
     // authenticated user, never a supplied patient ID.
 
-    const patient =
-      await this.patientsService.findOwnPatient(user);
+    const patient = await this.patientsService.findOwnPatient(user);
 
     const [doctor, appointment] = await Promise.all([
       this.repository.findDoctor(patient.doctorId),
 
-      this.repository.findNextConsultation(
-        patient.id,
-        patient.doctorId,
-      ),
+      this.repository.findNextConsultation(patient.id, patient.doctorId),
     ]);
 
     if (!doctor) {
-      throw new NotFoundException(
-        'Assigned doctor not found',
-      );
+      throw new NotFoundException('Assigned doctor not found');
+    }
+
+    let nextConsultation = null;
+    if (appointment) {
+      nextConsultation = {
+        id: appointment.id,
+        scheduledAt: appointment.scheduled_at,
+        mode: appointment.mode,
+        status: appointment.status,
+      };
     }
 
     return {
@@ -50,14 +51,7 @@ export class PatientDashboardService {
         specialty: doctor.specialty,
       },
 
-      nextConsultation: appointment
-        ? {
-            id: appointment.id,
-            scheduledAt: appointment.scheduled_at,
-            mode: appointment.mode,
-            status: appointment.status,
-          }
-        : null,
+      nextConsultation,
     };
   }
 }

@@ -19,9 +19,7 @@ import { CallsService } from '../services/calls.service';
 
 @Controller('calls')
 export class CallsController {
-  constructor(
-    private readonly callsService: CallsService,
-  ) {}
+  constructor(private readonly callsService: CallsService) {}
 
   @Post()
   @Roles('doctor')
@@ -34,9 +32,7 @@ export class CallsController {
 
   @Get('current')
   @Roles('patient')
-  currentPatientCall(
-    @CurrentUser() patient: AuthenticatedUser,
-  ) {
+  currentPatientCall(@CurrentUser() patient: AuthenticatedUser) {
     return this.callsService.getCurrentForPatient(patient);
   }
 
@@ -46,10 +42,7 @@ export class CallsController {
     @Param('patientId', ParseUUIDPipe) patientId: string,
     @CurrentUser() doctor: AuthenticatedUser,
   ) {
-    return this.callsService.getCurrentForDoctor(
-      doctor,
-      patientId,
-    );
+    return this.callsService.getCurrentForDoctor(doctor, patientId);
   }
 
   @Post(':id/accept')
@@ -85,25 +78,18 @@ export class CallsController {
     @Param('id', ParseUUIDPipe) callId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.callsService.getParticipantToken(
-      callId,
-      user,
-    );
+    return this.callsService.getParticipantToken(callId, user);
   }
 
   @Get('patients/:patientId/history')
-@Roles('doctor')
-getPatientCallHistory(
-  @Param('patientId', ParseUUIDPipe)
-  patientId: string,
+  @Roles('doctor')
+  getPatientCallHistory(
+    @Param('patientId', ParseUUIDPipe)
+    patientId: string,
 
-  @CurrentUser()
-  doctor: AuthenticatedUser,
-) {
-  return this.callsService.getPatientCallHistory(
-    patientId,
-    doctor,
-  );
-}
-
+    @CurrentUser()
+    doctor: AuthenticatedUser,
+  ) {
+    return this.callsService.getPatientCallHistory(patientId, doctor);
+  }
 }

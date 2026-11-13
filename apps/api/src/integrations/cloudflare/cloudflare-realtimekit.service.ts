@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 
 import { ConfigService } from '@nestjs/config';
 
@@ -23,14 +20,10 @@ interface CloudflareParticipant {
 
 @Injectable()
 export class CloudflareRealtimeKitService {
-  constructor(
-    private readonly config: ConfigService,
-  ) {}
+  constructor(private readonly config: ConfigService) {}
 
   private get baseUrl(): string {
-    const accountId = this.config.getOrThrow<string>(
-      'CLOUDFLARE_ACCOUNT_ID',
-    );
+    const accountId = this.config.getOrThrow<string>('CLOUDFLARE_ACCOUNT_ID');
 
     const appId = this.config.getOrThrow<string>(
       'CLOUDFLARE_REALTIMEKIT_APP_ID',
@@ -48,6 +41,10 @@ export class CloudflareRealtimeKitService {
     body?: object,
   ): Promise<T> {
     let response: Response;
+    let requestBody: string | undefined;
+    if (body) {
+      requestBody = JSON.stringify(body);
+    }
 
     try {
       response = await fetch(`${this.baseUrl}${path}`, {
@@ -58,7 +55,7 @@ export class CloudflareRealtimeKitService {
           )}`,
           'Content-Type': 'application/json',
         },
-        body: body ? JSON.stringify(body) : undefined,
+        body: requestBody,
         signal: AbortSignal.timeout(15000),
       });
     } catch {
@@ -73,8 +70,7 @@ export class CloudflareRealtimeKitService {
       );
     }
 
-    const result =
-      (await response.json()) as CloudflareResponse<T>;
+    const result = (await response.json()) as CloudflareResponse<T>;
 
     if (!result.success || !result.data) {
       throw new ServiceUnavailableException(
@@ -86,15 +82,11 @@ export class CloudflareRealtimeKitService {
   }
 
   async createMeeting(): Promise<string> {
-    const meeting = await this.request<CloudflareMeeting>(
-      '/meetings',
-      'POST',
-      {
-        title: 'Clinic Consultation',
-        record_on_start: false,
-        transcribe_on_end: false,
-      },
-    );
+    const meeting = await this.request<CloudflareMeeting>('/meetings', 'POST', {
+      title: 'Clinic Consultation',
+      record_on_start: false,
+      transcribe_on_end: false,
+    });
 
     return meeting.id;
   }
@@ -108,9 +100,9 @@ export class CloudflareRealtimeKitService {
     let presetKey: string;
 
     if (callType === 'audio') {
-        presetKey = 'CLOUDFLARE_AUDIO_PRESET';
+      presetKey = 'CLOUDFLARE_AUDIO_PRESET';
     } else {
-        presetKey = 'CLOUDFLARE_VIDEO_PRESET';
+      presetKey = 'CLOUDFLARE_VIDEO_PRESET';
     }
 
     const presetName = this.config.getOrThrow<string>(presetKey);
@@ -123,9 +115,7 @@ export class CloudflareRealtimeKitService {
         custom_participant_id: userId,
         preset_name: presetName,
         token: {
-          expires_on: new Date(
-            Date.now() + 60 * 60 * 1000,
-          ).toISOString(),
+          expires_on: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
         },
       },
     );
@@ -144,12 +134,8 @@ export class CloudflareRealtimeKitService {
   }
 
   async endMeeting(meetingId: string): Promise<void> {
-    await this.request<CloudflareMeeting>(
-      `/meetings/${meetingId}`,
-      'PATCH',
-      {
-        status: 'INACTIVE',
-      },
-    );
+    await this.request<CloudflareMeeting>(`/meetings/${meetingId}`, 'PATCH', {
+      status: 'INACTIVE',
+    });
   }
 }

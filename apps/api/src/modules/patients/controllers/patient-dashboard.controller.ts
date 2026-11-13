@@ -1,7 +1,4 @@
-import {
-  Controller,
-  Get,
-} from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 
@@ -14,14 +11,10 @@ import { PatientDashboardService } from '../services/patient-dashboard.service';
 @Controller('patients/me/dashboard')
 @Roles('patient')
 export class PatientDashboardController {
-  constructor(
-    private readonly dashboardService: PatientDashboardService,
-  ) {}
+  constructor(private readonly dashboardService: PatientDashboardService) {}
 
   @Get()
-  getDashboard(
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
+  getDashboard(@CurrentUser() user: AuthenticatedUser) {
     return this.dashboardService.getDashboard(user);
   }
 }

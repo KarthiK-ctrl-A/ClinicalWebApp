@@ -1,17 +1,10 @@
 'use client';
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { getErrorMessage } from '@/lib/error-message';
 
-import {
-  Phone,
-  Video,
-  RefreshCw,
-} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+
+import { Phone, Video, RefreshCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 
@@ -21,10 +14,7 @@ import { createClient } from '@/lib/supabase/client';
 
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
-import type {
-  CallHistoryItem,
-  CallOutcome,
-} from '../types/call';
+import type { CallHistoryItem, CallOutcome } from '../types/call';
 
 interface CallHistoryProps {
   patientId: string;
@@ -50,61 +40,46 @@ const outcomeStyles: Record<CallOutcome, string> = {
   unknown: 'bg-slate-100 text-slate-700',
 };
 
-function formatDuration(
-  seconds: number | null,
-): string {
+const callTypeDisplay = {
+  audio: { label: 'Audio', icon: Phone },
+  video: { label: 'Video', icon: Video },
+};
+
+function formatDuration(seconds: number | null): string {
   if (seconds === null) {
     return '—';
   }
 
   const hours = Math.floor(seconds / 3600);
 
-  const minutes = Math.floor(
-    (seconds % 3600) / 60,
-  );
+  const minutes = Math.floor((seconds % 3600) / 60);
 
   const remainingSeconds = seconds % 60;
 
-  const paddedMinutes = String(minutes).padStart(
-    2,
-    '0',
-  );
+  const paddedMinutes = String(minutes).padStart(2, '0');
 
-  const paddedSeconds = String(
-    remainingSeconds,
-  ).padStart(2, '0');
+  const paddedSeconds = String(remainingSeconds).padStart(2, '0');
 
   if (hours > 0) {
-    return (
-      `${hours}:` +
-      `${paddedMinutes}:` +
-      `${paddedSeconds}`
-    );
+    return `${hours}:${paddedMinutes}:${paddedSeconds}`;
   }
 
   return `${paddedMinutes}:${paddedSeconds}`;
 }
 
-export function CallHistory({
-  patientId,
-}: CallHistoryProps) {
-  const supabase = useMemo(
-    () => createClient(),
-    [],
-  );
+export function CallHistory({ patientId }: CallHistoryProps) {
+  const supabase = useMemo(() => createClient(), []);
 
-  const [calls, setCalls] =
-    useState<CallHistoryItem[]>([]);
+  const [calls, setCalls] = useState<CallHistoryItem[]>([]);
 
   const [loading, setLoading] = useState(true);
 
   const [error, setError] = useState('');
 
-  const loadHistory = useCallback(async () => {
-    return clinicApi<CallHistoryItem[]>(
-      `/api/v1/calls/patients/${patientId}/history`,
-    );
-  }, [patientId]);
+  const loadHistory = useCallback(
+    () => clinicApi<CallHistoryItem[]>(`/api/v1/calls/patients/${patientId}/history`),
+    [patientId],
+  );
 
   useEffect(() => {
     let active = true;
@@ -112,10 +87,6 @@ export function CallHistory({
     let channel: RealtimeChannel | null = null;
 
     let unsubscribeAuth: (() => void) | null = null;
-
-    setCalls([]);
-    setLoading(true);
-    setError('');
 
     async function refresh() {
       try {
@@ -127,11 +98,7 @@ export function CallHistory({
         }
       } catch (err) {
         if (active) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : 'Unable to load call history',
-          );
+          setError(getErrorMessage(err, 'Unable to load call history'));
         }
       } finally {
         if (active) {
@@ -152,47 +119,36 @@ export function CallHistory({
 
         const userId = session.user.id;
 
-        await supabase.realtime.setAuth(
-          session.access_token,
-        );
+        await supabase.realtime.setAuth(session.access_token);
 
         if (!active) return;
 
         const {
           data: { subscription },
-        } = supabase.auth.onAuthStateChange(
-          (_event, updatedSession) => {
-            if (!active) return;
+        } = supabase.auth.onAuthStateChange((_event, updatedSession) => {
+          if (!active) return;
 
-            // Clear history when accounts change.
-            if (
-              !updatedSession ||
-              updatedSession.user.id !== userId
-            ) {
-              setCalls([]);
-              setError('');
-              void supabase.removeChannel(channel!);
-              window.location.replace('/login');
-              return;
+          if (!updatedSession || updatedSession.user.id !== userId) {
+            setCalls([]);
+            setError('');
+            if (channel) {
+              void supabase.removeChannel(channel);
             }
+            window.location.replace('/login');
+            return;
+          }
 
-            void supabase.realtime.setAuth(
-              updatedSession.access_token,
-            );
-          },
-        );
+          void supabase.realtime.setAuth(updatedSession.access_token);
+        });
 
-        unsubscribeAuth = () =>
-          subscription.unsubscribe();
+        unsubscribeAuth = () => subscription.unsubscribe();
 
         await refresh();
 
         if (!active) return;
 
         channel = supabase
-          .channel(
-            `call-history:${userId}:${patientId}`,
-          )
+          .channel(`call-history:${userId}:${patientId}`)
           .on(
             'postgres_changes',
             {
@@ -214,11 +170,7 @@ export function CallHistory({
           });
       } catch (err) {
         if (active) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : 'Unable to initialize call history',
-          );
+          setError(getErrorMessage(err, 'Unable to initialize call history'));
 
           setLoading(false);
         }
@@ -247,11 +199,7 @@ export function CallHistory({
       setCalls(result);
       setError('');
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Unable to refresh history',
-      );
+      setError(getErrorMessage(err, 'Unable to refresh history'));
     } finally {
       setLoading(false);
     }
@@ -261,37 +209,21 @@ export function CallHistory({
     <section className="space-y-4 rounded-xl border bg-white p-5">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">
-            Consultation History
-          </h2>
+          <h2 className="text-lg font-semibold">Consultation History</h2>
 
-          <p className="text-sm text-slate-500">
-            Audio and video calls with this patient
-          </p>
+          <p className="text-sm text-slate-500">Audio and video calls with this patient</p>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={loading}
-          onClick={() => void handleRefresh()}
-        >
+        <Button variant="outline" size="sm" disabled={loading} onClick={() => void handleRefresh()}>
           <RefreshCw className="mr-2 h-4 w-4" />
           Refresh
         </Button>
       </div>
 
-      {loading && (
-        <p className="text-sm text-slate-500">
-          Loading call history...
-        </p>
-      )}
+      {loading && <p className="text-sm text-slate-500">Loading call history...</p>}
 
       {error && (
-        <p
-          role="alert"
-          className="text-sm text-red-600"
-        >
+        <p role="alert" className="text-sm text-red-600">
           {error}
         </p>
       )}
@@ -300,13 +232,9 @@ export function CallHistory({
         <div className="rounded-lg bg-slate-50 p-8 text-center">
           <Phone className="mx-auto mb-3 h-8 w-8 text-slate-400" />
 
-          <p className="font-medium">
-            No consultations yet
-          </p>
+          <p className="font-medium">No consultations yet</p>
 
-          <p className="text-sm text-slate-500">
-            Audio and video call history will appear here.
-          </p>
+          <p className="text-sm text-slate-500">Audio and video call history will appear here.</p>
         </div>
       )}
 
@@ -323,56 +251,41 @@ export function CallHistory({
             </thead>
 
             <tbody>
-              {calls.map((call) => (
-                <tr
-                  key={call.id}
-                  className="border-b last:border-0"
-                >
-                  <td className="p-3">
-                    {new Date(
-                      call.createdAt,
-                    ).toLocaleString()}
-                  </td>
+              {calls.map((call) => {
+                const { label, icon: CallIcon } = callTypeDisplay[call.callType];
 
-                  <td className="p-3">
-                    <span className="flex items-center gap-2">
-                      {call.callType === 'video' ? (
-                        <Video className="h-4 w-4 text-blue-600" />
-                      ) : (
-                        <Phone className="h-4 w-4 text-blue-600" />
-                      )}
+                return (
+                  <tr key={call.id} className="border-b last:border-0">
+                    <td className="p-3">{new Date(call.createdAt).toLocaleString()}</td>
 
-                      {call.callType === 'video'
-                        ? 'Video'
-                        : 'Audio'}
-                    </span>
-                  </td>
+                    <td className="p-3">
+                      <span className="flex items-center gap-2">
+                        <CallIcon className="h-4 w-4 text-blue-600" />
+                        {label}
+                      </span>
+                    </td>
 
-                  <td className="p-3">
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
-                        outcomeStyles[call.outcome]
-                      }`}
-                    >
-                      {outcomeLabels[call.outcome]}
-                    </span>
-                  </td>
+                    <td className="p-3">
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
+                          outcomeStyles[call.outcome]
+                        }`}
+                      >
+                        {outcomeLabels[call.outcome]}
+                      </span>
+                    </td>
 
-                  <td className="p-3">
-                    {formatDuration(
-                      call.durationSeconds,
-                    )}
-                  </td>
-                </tr>
-              ))}
+                    <td className="p-3">{formatDuration(call.durationSeconds)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
 
       <p className="text-xs text-slate-400">
-        Duration currently measures elapsed time
-        from call acceptance to termination.
+        Duration currently measures elapsed time from call acceptance to termination.
       </p>
     </section>
   );

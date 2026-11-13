@@ -1,46 +1,22 @@
 import { createClient } from '@supabase/supabase-js';
 
-// ======================================
-// CONFIGURATION
-// ======================================
+const { SUPABASE_URL, SUPABASE_SECRET_KEY, DEMO_PASSWORD } = process.env;
 
-const {
-  SUPABASE_URL,
-  SUPABASE_SECRET_KEY,
-  DEMO_PASSWORD,
-} = process.env;
-
-if (
-  !SUPABASE_URL ||
-  !SUPABASE_SECRET_KEY ||
-  !DEMO_PASSWORD
-) {
-  throw new Error(
-    'Missing Supabase credentials or DEMO_PASSWORD'
-  );
+if (!SUPABASE_URL || !SUPABASE_SECRET_KEY || !DEMO_PASSWORD) {
+  throw new Error('Missing Supabase credentials or DEMO_PASSWORD');
 }
 
-const supabase = createClient(
-  SUPABASE_URL,
-  SUPABASE_SECRET_KEY,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-      detectSessionInUrl: false,
-    },
-  }
-);
-
-// ======================================
-// HELPERS
-// ======================================
+const supabase = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+    detectSessionInUrl: false,
+  },
+});
 
 function check(result, operation) {
   if (result.error) {
-    throw new Error(
-      `${operation}: ${result.error.message}`
-    );
+    throw new Error(`${operation}: ${result.error.message}`);
   }
 
   return result.data;
@@ -51,25 +27,14 @@ const authResponse = check(
     page: 1,
     perPage: 1000,
   }),
-  'List authentication users'
+  'List authentication users',
 );
 
 const existingUsers = new Map(
-  authResponse.users.map((user) => [
-    user.email.toLowerCase(),
-    user,
-  ])
+  authResponse.users.map((user) => [user.email.toLowerCase(), user]),
 );
 
-// ======================================
-// CREATE AUTHENTICATION USER
-// ======================================
-
-async function createAuthUser(
-  email,
-  fullName,
-  role
-) {
+async function createAuthUser(email, fullName, role) {
   const normalizedEmail = email.toLowerCase();
 
   const existing = existingUsers.get(normalizedEmail);
@@ -88,7 +53,7 @@ async function createAuthUser(
         role,
       },
     }),
-    `Create user ${email}`
+    `Create user ${email}`,
   );
 
   existingUsers.set(normalizedEmail, data.user);
@@ -96,37 +61,22 @@ async function createAuthUser(
   return data.user.id;
 }
 
-// ======================================
-// CREATE PROFILE
-// ======================================
-
-async function createProfile(
-  userId,
-  fullName,
-  role,
-  specialty = null
-) {
+async function createProfile(userId, fullName, role, specialty = null) {
   check(
-    await supabase
-      .from('profiles')
-      .upsert(
-        {
-          id: userId,
-          full_name: fullName,
-          role,
-          specialty,
-        },
-        {
-          onConflict: 'id',
-        }
-      ),
-    `Create profile ${fullName}`
+    await supabase.from('profiles').upsert(
+      {
+        id: userId,
+        full_name: fullName,
+        role,
+        specialty,
+      },
+      {
+        onConflict: 'id',
+      },
+    ),
+    `Create profile ${fullName}`,
   );
 }
-
-// ======================================
-// DOCTOR CONFIGURATION
-// ======================================
 
 const doctors = [
   {
@@ -144,103 +94,103 @@ const doctors = [
 const doctorIds = [];
 
 for (const doctor of doctors) {
-  const userId = await createAuthUser(
-    doctor.email,
-    doctor.name,
-    'doctor'
-  );
+  const userId = await createAuthUser(doctor.email, doctor.name, 'doctor');
 
-  await createProfile(
-    userId,
-    doctor.name,
-    'doctor',
-    doctor.specialty
-  );
+  await createProfile(userId, doctor.name, 'doctor', doctor.specialty);
 
   doctorIds.push(userId);
 
   console.log(`Doctor ready: ${doctor.name}`);
 }
 
-// ======================================
-// FICTIONAL PATIENT NAMES
-// ======================================
-
 const firstNames = [
-  'Avery', 'Jordan', 'Taylor', 'Morgan',
-  'Casey', 'Riley', 'Parker', 'Quinn',
-  'Reese', 'Cameron', 'Drew', 'Hayden',
-  'Alex', 'Jamie', 'Skyler', 'Robin',
-  'Sam', 'Blake', 'Charlie', 'Emerson',
+  'Avery',
+  'Jordan',
+  'Taylor',
+  'Morgan',
+  'Casey',
+  'Riley',
+  'Parker',
+  'Quinn',
+  'Reese',
+  'Cameron',
+  'Drew',
+  'Hayden',
+  'Alex',
+  'Jamie',
+  'Skyler',
+  'Robin',
+  'Sam',
+  'Blake',
+  'Charlie',
+  'Emerson',
 ];
 
 const lastNames = [
-  'Parker', 'Rivera', 'Bennett', 'Collins',
-  'Mitchell', 'Hughes', 'Reed', 'Foster',
-  'Hayes', 'Morgan', 'Brooks', 'Turner',
-  'Cooper', 'Bailey', 'Russell', 'Ward',
-  'Gray', 'Price', 'Kelly', 'James',
+  'Parker',
+  'Rivera',
+  'Bennett',
+  'Collins',
+  'Mitchell',
+  'Hughes',
+  'Reed',
+  'Foster',
+  'Hayes',
+  'Morgan',
+  'Brooks',
+  'Turner',
+  'Cooper',
+  'Bailey',
+  'Russell',
+  'Ward',
+  'Gray',
+  'Price',
+  'Kelly',
+  'James',
 ];
 
-// ======================================
-// SEED MEDICAL RECORDS
-// ======================================
-
-async function seedIfEmpty(
-  tableName,
-  patientId,
-  records
-) {
+async function seedIfEmpty(tableName, patientId, records) {
   const existing = check(
     await supabase
       .from(tableName)
       .select('id')
       .eq('patient_id', patientId)
       .limit(1),
-    `Read ${tableName}`
+    `Read ${tableName}`,
   );
 
   if (existing.length > 0) {
     return;
   }
 
-  check(
-    await supabase
-      .from(tableName)
-      .insert(records),
-    `Seed ${tableName}`
-  );
+  check(await supabase.from(tableName).insert(records), `Seed ${tableName}`);
 }
-
-// ======================================
-// GENERATE 40 PATIENTS
-// ======================================
 
 for (let i = 1; i <= 40; i++) {
   const number = String(i).padStart(2, '0');
 
-  const doctorIndex = i <= 20 ? 0 : 1;
+  const doctorIndex = Math.floor((i - 1) / 20);
+  let gender = 'Female';
+  let allergies = 'None known';
+  let imagingType = 'Chest X-ray';
 
-  const fullName = `${
-    firstNames[(i - 1) % 20]
-  } ${
-    lastNames[(i + 3) % 20]
-  }`;
+  if (i % 2 === 0) {
+    gender = 'Male';
+  }
+  if (i % 5 === 0) {
+    allergies = 'Penicillin';
+  }
+  if (doctorIndex === 1) {
+    imagingType = 'Abdominal Ultrasound';
+  }
 
-  const email =
-    `patient${number}@clinic-demo.example`;
+  const fullName = `${firstNames[(i - 1) % 20]} ${lastNames[(i + 3) % 20]}`;
 
-  const userId = await createAuthUser(
-    email,
-    fullName,
-    'patient'
-  );
+  const email = `patient${number}@clinic-demo.example`;
 
-  await createProfile(
-    userId,
-    fullName,
-    'patient'
-  );
+  const userId = await createAuthUser(email, fullName, 'patient');
+
+  await createProfile(userId, fullName, 'patient');
 
   const year = 1955 + ((i * 7) % 45);
   const month = 1 + ((i * 3) % 12);
@@ -260,32 +210,23 @@ for (let i = 1; i <= 40; i++) {
           user_id: userId,
           doctor_id: doctorIds[doctorIndex],
           date_of_birth: dateOfBirth,
-          gender: i % 2 === 0 ? 'Male' : 'Female',
-          phone:
-            `202-555-${String(100 + i).padStart(4, '0')}`,
+          gender,
+          phone: `202-555-${String(100 + i).padStart(4, '0')}`,
           address: 'Fictional Test Address, USA',
-          allergies:
-            i % 5 === 0
-              ? 'Penicillin'
-              : 'None known',
-          medical_notes:
-            'Synthetic record for application testing.',
+          allergies,
+          medical_notes: 'Synthetic record for application testing.',
         },
         {
           onConflict: 'user_id',
-        }
+        },
       )
       .select('id')
       .single(),
-    `Create patient ${number}`
+    `Create patient ${number}`,
   );
 
   const patientId = patient.id;
   const doctorId = doctorIds[doctorIndex];
-
-  // ======================================
-  // LAB RESULTS
-  // ======================================
 
   await seedIfEmpty('lab_results', patientId, [
     {
@@ -306,28 +247,15 @@ for (let i = 1; i <= 40; i++) {
     },
   ]);
 
-  // ======================================
-  // IMAGING REPORTS
-  // ======================================
-
   await seedIfEmpty('imaging_reports', patientId, [
     {
       patient_id: patientId,
-      imaging_type:
-        doctorIndex === 0
-          ? 'Chest X-ray'
-          : 'Abdominal Ultrasound',
-      findings:
-        'No acute abnormality in synthetic example.',
-      impression:
-        'Sample imaging report for UI testing.',
+      imaging_type: imagingType,
+      findings: 'No acute abnormality in synthetic example.',
+      impression: 'Sample imaging report for UI testing.',
       report_date: '2026-09-20',
     },
   ]);
-
-  // ======================================
-  // PRESCRIPTION HISTORY
-  // ======================================
 
   await seedIfEmpty('prescriptions', patientId, [
     {
@@ -352,9 +280,7 @@ for (let i = 1; i <= 40; i++) {
     },
   ]);
 
-  console.log(
-    `Patient ${number}/40 ready: ${fullName}`
-  );
+  console.log(`Patient ${number}/40 ready: ${fullName}`);
 }
 
 console.log('\n================================');

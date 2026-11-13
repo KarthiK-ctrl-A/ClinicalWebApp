@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 
 import helmet from 'helmet';
 
@@ -32,9 +32,9 @@ async function bootstrap() {
 
   const port = config.get<number>('PORT', 3001);
 
-  await app.listen(port,'0.0.0.0');
+  await app.listen(port, '0.0.0.0');
 
-  console.log(`Clinic API running on port ${port}`);
+  Logger.log(`Clinic API running on port ${port}`, 'Bootstrap');
 }
 
 void bootstrap();

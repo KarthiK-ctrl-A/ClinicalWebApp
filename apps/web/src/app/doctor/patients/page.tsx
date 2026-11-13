@@ -1,5 +1,7 @@
 'use client';
 
+import { getErrorMessage } from '@/lib/error-message';
+
 import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
@@ -10,16 +12,14 @@ import { Button } from '@/components/ui/button';
 
 import { clinicApi } from '@/lib/api/clinic-api';
 
-import {
-  PaginatedResponse,
-  PatientSummary,
-} from '@/types/clinic';
+import { PaginatedResponse, PatientSummary } from '@/types/clinic';
+
+const PAGE_SIZE = 20;
 
 export default function DoctorPatientsPage() {
-  const [patients, setPatients] = useState<PatientSummary[]>(
-    [],
-  );
-
+  const [patients, setPatients] = useState<PatientSummary[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -28,50 +28,38 @@ export default function DoctorPatientsPage() {
   const [patientsOwnerId, setPatientsOwnerId] = useState<string | null>(null);
 
   useEffect(() => {
-  const {
-    data: { subscription },
-  } = supabase.auth.onAuthStateChange((_event, session) => {
-    setDoctorId(session?.user.id ?? null);
-  });
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setDoctorId(session?.user.id ?? null);
+    });
 
-  return () => {
-    subscription.unsubscribe();
-  };
-}, [supabase]);
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
 
   useEffect(() => {
     let active = true;
 
-    setPatients([]);
-    setPatientsOwnerId(null);
-    setError('');
-    setSearch('');
-
     if (!doctorId) {
-    setLoading(false);
-
-    return () => {
-      active = false;
-    };
-  }
+      return;
+    }
 
     async function loadPatients() {
       try {
-        const response = await clinicApi<
-          PaginatedResponse<PatientSummary>
-        >('/api/v1/patients?page=1&pageSize=20');
+        const response = await clinicApi<PaginatedResponse<PatientSummary>>(
+          `/api/v1/patients?page=${page}&pageSize=${PAGE_SIZE}`,
+        );
 
         if (active) {
           setPatients(response.data);
+          setTotal(response.pagination.total);
           setPatientsOwnerId(doctorId);
         }
       } catch (err) {
         if (active) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : 'Unable to load patients',
-          );
+          setError(getErrorMessage(err, 'Unable to load patients'));
         }
       } finally {
         if (active) {
@@ -82,48 +70,47 @@ export default function DoctorPatientsPage() {
 
     void loadPatients();
 
-     return () => {
-    active = false;
-  };
-}, [doctorId]);
+    return () => {
+      active = false;
+    };
+  }, [doctorId, page]);
 
-  const visiblePatients =
-  patientsOwnerId === doctorId ? patients : [];
+  const filteredPatients = useMemo(() => {
+    if (patientsOwnerId !== doctorId) {
+      return [];
+    }
 
-const filteredPatients = useMemo(() => {
-  const value = search.trim().toLowerCase();
+    const value = search.trim().toLowerCase();
+    return patients.filter((patient) => patient.fullName.toLowerCase().includes(value));
+  }, [patients, patientsOwnerId, doctorId, search]);
 
-  return visiblePatients.filter((patient) =>
-    patient.fullName.toLowerCase().includes(value),
-  );
-}, [visiblePatients, search]);
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+
+  function changePage(nextPage: number) {
+    setSearch('');
+    setError('');
+    setLoading(true);
+    setPage(nextPage);
+  }
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold">
-          My Patients
-        </h1>
+        <h1 className="text-3xl font-semibold">My Patients</h1>
 
-        <p className="text-slate-500">
-          View and manage your assigned patients.
-        </p>
+        <p className="text-slate-500">View and manage your assigned patients.</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>
-            Assigned Patients ({patients.length})
-          </CardTitle>
+          <CardTitle>Assigned Patients ({total})</CardTitle>
         </CardHeader>
 
         <CardContent className="space-y-4">
           <Input
-            placeholder="Search patients by name..."
+            placeholder="Search this page by name..."
             value={search}
-            onChange={(event) =>
-              setSearch(event.target.value)
-            }
+            onChange={(event) => setSearch(event.target.value)}
           />
 
           {loading && <p>Loading patients...</p>}
@@ -149,25 +136,14 @@ const filteredPatients = useMemo(() => {
 
                 <tbody>
                   {filteredPatients.map((patient) => (
-                    <tr
-                      key={patient.id}
-                      className="border-b"
-                    >
-                      <td className="p-3 font-medium">
-                        {patient.fullName}
-                      </td>
+                    <tr key={patient.id} className="border-b">
+                      <td className="p-3 font-medium">{patient.fullName}</td>
 
-                      <td className="p-3">
-                        {patient.gender ?? '—'}
-                      </td>
+                      <td className="p-3">{patient.gender ?? '—'}</td>
 
-                      <td className="p-3">
-                        {patient.dateOfBirth ?? '—'}
-                      </td>
+                      <td className="p-3">{patient.dateOfBirth ?? '—'}</td>
 
-                      <td className="p-3">
-                        {patient.phone ?? '—'}
-                      </td>
+                      <td className="p-3">{patient.phone ?? '—'}</td>
 
                       <td className="p-3">
                         <Button size="sm" render={<Link href={`/doctor/patients/${patient.id}`} />}>
@@ -180,10 +156,30 @@ const filteredPatients = useMemo(() => {
               </table>
 
               {filteredPatients.length === 0 && (
-                <p className="py-6 text-center text-slate-500">
-                  No patients found.
-                </p>
+                <p className="py-6 text-center text-slate-500">No patients found.</p>
               )}
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between text-sm">
+              <Button
+                variant="outline"
+                disabled={loading || page === 1}
+                onClick={() => changePage(page - 1)}
+              >
+                Previous
+              </Button>
+              <span>
+                Page {page} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                disabled={loading || page >= totalPages}
+                onClick={() => changePage(page + 1)}
+              >
+                Next
+              </Button>
             </div>
           )}
         </CardContent>

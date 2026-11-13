@@ -1,11 +1,8 @@
 'use client';
 
-import {
-  FormEvent,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { getErrorMessage } from '@/lib/error-message';
+
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 
 import { Send } from 'lucide-react';
 
@@ -19,16 +16,9 @@ import { createClient } from '@/lib/supabase/client';
 
 import { CurrentUser } from '@/types/clinic';
 
-import {
-  Conversation,
-  Message,
-  MessageThreadProps,
-} from '../types/message';
+import { Conversation, Message, MessageThreadProps } from '../types/message';
 
-function mergeMessages(
-  current: Message[],
-  incoming: Message[],
-): Message[] {
+function mergeMessages(current: Message[], incoming: Message[]): Message[] {
   const messages = new Map<string, Message>();
 
   for (const message of [...current, ...incoming]) {
@@ -36,29 +26,21 @@ function mergeMessages(
   }
 
   return Array.from(messages.values()).sort(
-    (a, b) =>
-      a.createdAt.localeCompare(b.createdAt) ||
-      a.id.localeCompare(b.id),
+    (a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id),
   );
 }
 
-export function MessageThread({
-  mode,
-  patientId,
-}: MessageThreadProps) {
+export function MessageThread({ mode, patientId }: MessageThreadProps) {
   const supabase = useMemo(() => createClient(), []);
 
-  const endpoint =
-    mode === 'doctor' && patientId
-      ? `/api/v1/messages/patients/${patientId}`
-      : '/api/v1/messages/me';
+  let endpoint = '/api/v1/messages/me';
+  if (mode === 'doctor' && patientId) {
+    endpoint = `/api/v1/messages/patients/${patientId}`;
+  }
 
-  const [user, setUser] = useState<CurrentUser | null>(
-    null,
-  );
+  const [user, setUser] = useState<CurrentUser | null>(null);
 
-  const [conversation, setConversation] =
-    useState<Conversation | null>(null);
+  const [conversation, setConversation] = useState<Conversation | null>(null);
 
   const [messages, setMessages] = useState<Message[]>([]);
 
@@ -78,13 +60,6 @@ export function MessageThread({
     let channel: RealtimeChannel | null = null;
 
     let unsubscribeAuth: (() => void) | null = null;
-
-    setUser(null);
-    setConversation(null);
-    setMessages([]);
-    setError('');
-    setConnected(false);
-    setLoading(true);
 
     async function initialize() {
       try {
@@ -117,9 +92,7 @@ export function MessageThread({
           throw new Error('Authentication session expired');
         }
 
-        await supabase.realtime.setAuth(
-          session.access_token,
-        );
+        await supabase.realtime.setAuth(session.access_token);
 
         if (!active) {
           return;
@@ -127,35 +100,26 @@ export function MessageThread({
 
         const {
           data: { subscription },
-        } = supabase.auth.onAuthStateChange(
-          (_event, updatedSession) => {
-            if (!active) {
-              return;
-            }
+        } = supabase.auth.onAuthStateChange((_event, updatedSession) => {
+          if (!active) {
+            return;
+          }
 
-            if (
-              !updatedSession ||
-              updatedSession.user.id !== currentUser.id
-            ) {
-              setMessages([]);
-              setConversation(null);
+          if (!updatedSession || updatedSession.user.id !== currentUser.id) {
+            setMessages([]);
+            setConversation(null);
 
-              window.location.replace('/login');
-              return;
-            }
+            window.location.replace('/login');
+            return;
+          }
 
-            void supabase.realtime.setAuth(
-              updatedSession.access_token,
-            );
-          },
-        );
+          void supabase.realtime.setAuth(updatedSession.access_token);
+        });
 
         unsubscribeAuth = () => subscription.unsubscribe();
 
         channel = supabase
-          .channel(
-            `messages:${currentUser.id}:${result.patientId}`,
-          )
+          .channel(`messages:${currentUser.id}:${result.patientId}`)
           .on(
             'postgres_changes',
             {
@@ -191,9 +155,7 @@ export function MessageThread({
                 createdAt: record.created_at,
               };
 
-              setMessages((current) =>
-                mergeMessages(current, [message]),
-              );
+              setMessages((current) => mergeMessages(current, [message]));
             },
           )
           .subscribe((status) => {
@@ -210,38 +172,23 @@ export function MessageThread({
               void clinicApi<Conversation>(endpoint)
                 .then((latest) => {
                   if (active) {
-                    setMessages((current) =>
-                      mergeMessages(
-                        current,
-                        latest.messages,
-                      ),
-                    );
+                    setMessages((current) => mergeMessages(current, latest.messages));
                   }
                 })
                 .catch(() => {
                   if (active) {
-                    setError(
-                      'Unable to synchronize recent messages',
-                    );
+                    setError('Unable to synchronize recent messages');
                   }
                 });
             }
 
-            if (
-              status === 'CHANNEL_ERROR' ||
-              status === 'TIMED_OUT' ||
-              status === 'CLOSED'
-            ) {
+            if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
               setConnected(false);
             }
           });
       } catch (err) {
         if (active) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : 'Unable to load conversation',
-          );
+          setError(getErrorMessage(err, 'Unable to load conversation'));
         }
       } finally {
         if (active) {
@@ -263,9 +210,7 @@ export function MessageThread({
     };
   }, [endpoint, mode, patientId, supabase]);
 
-  async function sendMessage(
-    event: FormEvent<HTMLFormElement>,
-  ) {
+  async function sendMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const content = draft.trim();
@@ -278,25 +223,16 @@ export function MessageThread({
     setError('');
 
     try {
-      const message = await clinicApi<Message>(
-        endpoint,
-        {
-          method: 'POST',
-          body: JSON.stringify({ content }),
-        },
-      );
+      const message = await clinicApi<Message>(endpoint, {
+        method: 'POST',
+        body: JSON.stringify({ content }),
+      });
 
-      setMessages((current) =>
-        mergeMessages(current, [message]),
-      );
+      setMessages((current) => mergeMessages(current, [message]));
 
       setDraft('');
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Unable to send message',
-      );
+      setError(getErrorMessage(err, 'Unable to send message'));
     } finally {
       setSending(false);
     }
@@ -314,28 +250,23 @@ export function MessageThread({
     );
   }
 
+  let connectionClass = 'text-amber-600';
+  let connectionLabel = 'Reconnecting';
+  if (connected) {
+    connectionClass = 'text-green-600';
+    connectionLabel = 'Live';
+  }
+
   return (
     <div className="flex h-[550px] flex-col overflow-hidden rounded-lg border bg-white">
       <div className="flex items-center justify-between border-b px-5 py-4">
         <div>
-          <h2 className="text-lg font-semibold">
-            Messages
-          </h2>
+          <h2 className="text-lg font-semibold">Messages</h2>
 
-          <p className="text-xs text-slate-500">
-            Secure doctor-patient conversation
-          </p>
+          <p className="text-xs text-slate-500">Secure doctor-patient conversation</p>
         </div>
 
-        <span
-          className={`text-xs ${
-            connected
-              ? 'text-green-600'
-              : 'text-amber-600'
-          }`}
-        >
-          {connected ? 'Live' : 'Reconnecting'}
-        </span>
+        <span className={`text-xs ${connectionClass}`}>{connectionLabel}</span>
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50 p-5">
@@ -347,37 +278,23 @@ export function MessageThread({
 
         {messages.map((message) => {
           const isMine = message.senderId === user.id;
+          let alignment = 'justify-start';
+          let bubbleClass = 'border bg-white text-slate-800';
+          let timeClass = 'text-slate-400';
+
+          if (isMine) {
+            alignment = 'justify-end';
+            bubbleClass = 'bg-blue-600 text-white';
+            timeClass = 'text-blue-100';
+          }
 
           return (
-            <div
-              key={message.id}
-              className={`flex ${
-                isMine
-                  ? 'justify-end'
-                  : 'justify-start'
-              }`}
-            >
-              <div
-                className={`max-w-[75%] rounded-xl px-4 py-3 text-sm ${
-                  isMine
-                    ? 'bg-blue-600 text-white'
-                    : 'border bg-white text-slate-800'
-                }`}
-              >
-                <p className="whitespace-pre-wrap break-words">
-                  {message.content}
-                </p>
+            <div key={message.id} className={`flex ${alignment}`}>
+              <div className={`max-w-[75%] rounded-xl px-4 py-3 text-sm ${bubbleClass}`}>
+                <p className="whitespace-pre-wrap break-words">{message.content}</p>
 
-                <p
-                  className={`mt-2 text-right text-xs ${
-                    isMine
-                      ? 'text-blue-100'
-                      : 'text-slate-400'
-                  }`}
-                >
-                  {new Date(
-                    message.createdAt,
-                  ).toLocaleTimeString([], {
+                <p className={`mt-2 text-right text-xs ${timeClass}`}>
+                  {new Date(message.createdAt).toLocaleTimeString([], {
                     hour: '2-digit',
                     minute: '2-digit',
                   })}
@@ -389,33 +306,22 @@ export function MessageThread({
       </div>
 
       {error && (
-        <p
-          role="alert"
-          className="border-t px-5 py-2 text-xs text-red-600"
-        >
+        <p role="alert" className="border-t px-5 py-2 text-xs text-red-600">
           {error}
         </p>
       )}
 
-      <form
-        onSubmit={sendMessage}
-        className="flex gap-3 border-t p-4"
-      >
+      <form onSubmit={sendMessage} className="flex gap-3 border-t p-4">
         <input
           type="text"
           value={draft}
-          onChange={(event) =>
-            setDraft(event.target.value)
-          }
+          onChange={(event) => setDraft(event.target.value)}
           placeholder="Type your message..."
           maxLength={2000}
           className="flex-1 rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
         />
 
-        <Button
-          type="submit"
-          disabled={!draft.trim() || sending}
-        >
+        <Button type="submit" disabled={!draft.trim() || sending}>
           <Send className="mr-2 h-4 w-4" />
 
           {sending ? 'Sending' : 'Send'}

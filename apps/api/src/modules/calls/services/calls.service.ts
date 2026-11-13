@@ -14,12 +14,9 @@ import { PatientsService } from '../../patients/services/patients.service';
 
 import { InitiateCallDto } from '../dto/initiate-call.dto';
 
-import {
-  CallRecord,
-  CallResponse,
-} from '../interfaces/call.interface';
+import { CallRecord, CallResponse } from '../interfaces/call.interface';
 
-import { CallsRepository } from '../repsositories/calls.repository';
+import { CallsRepository } from '../repositories/calls.repository';
 
 @Injectable()
 export class CallsService {
@@ -36,15 +33,10 @@ export class CallsService {
     dto: InitiateCallDto,
   ): Promise<CallResponse> {
     if (doctor.role !== 'doctor') {
-      throw new ForbiddenException(
-        'Only doctors can initiate calls',
-      );
+      throw new ForbiddenException('Only doctors can initiate calls');
     }
 
-    await this.patientsService.findOne(
-      dto.patientId,
-      doctor,
-    );
+    await this.patientsService.findOne(dto.patientId, doctor);
 
     const meetingId = await this.cloudflare.createMeeting();
 
@@ -61,42 +53,37 @@ export class CallsService {
       try {
         await this.cloudflare.endMeeting(meetingId);
       } catch {
-        this.logger.error(
-          'Unable to clean up failed meeting creation',
-        );
+        this.logger.error('Unable to clean up failed meeting creation');
       }
 
       throw error;
     }
   }
 
-  async getCurrentForPatient(
-    patient: AuthenticatedUser,
-  ) {
+  async getCurrentForPatient(patient: AuthenticatedUser) {
     if (patient.role !== 'patient') {
-      throw new ForbiddenException(
-        'Patient access required',
-      );
+      throw new ForbiddenException('Patient access required');
     }
 
-    const record =
-      await this.patientsService.findOwnPatient(patient);
+    const record = await this.patientsService.findOwnPatient(patient);
 
     const call = await this.repository.findOpenForPatient(
       record.id,
       patient.accessToken,
     );
 
+    let currentCall: CallResponse | null = null;
+    if (call) {
+      currentCall = this.toResponse(call);
+    }
+
     return {
       patientId: record.id,
-      call: call ? this.toResponse(call) : null,
+      call: currentCall,
     };
   }
 
-  async getCurrentForDoctor(
-    doctor: AuthenticatedUser,
-    patientId: string,
-  ) {
+  async getCurrentForDoctor(doctor: AuthenticatedUser, patientId: string) {
     if (doctor.role !== 'doctor') {
       throw new ForbiddenException();
     }
@@ -108,9 +95,14 @@ export class CallsService {
       doctor.accessToken,
     );
 
+    let currentCall: CallResponse | null = null;
+    if (call) {
+      currentCall = this.toResponse(call);
+    }
+
     return {
       patientId,
-      call: call ? this.toResponse(call) : null,
+      call: currentCall,
     };
   }
 
@@ -118,10 +110,7 @@ export class CallsService {
     callId: string,
     user: AuthenticatedUser,
   ): Promise<CallRecord> {
-    const call = await this.repository.findById(
-      callId,
-      user.accessToken,
-    );
+    const call = await this.repository.findById(callId, user.accessToken);
 
     if (!call) {
       throw new NotFoundException('Call not found');
@@ -132,13 +121,9 @@ export class CallsService {
         throw new NotFoundException('Call not found');
       }
 
-      await this.patientsService.findOne(
-        call.patient_id,
-        user,
-      );
+      await this.patientsService.findOne(call.patient_id, user);
     } else {
-      const patient =
-        await this.patientsService.findOwnPatient(user);
+      const patient = await this.patientsService.findOwnPatient(user);
 
       if (patient.id !== call.patient_id) {
         throw new NotFoundException('Call not found');
@@ -153,9 +138,7 @@ export class CallsService {
     patient: AuthenticatedUser,
   ): Promise<CallResponse> {
     if (patient.role !== 'patient') {
-      throw new ForbiddenException(
-        'Only patients can accept calls',
-      );
+      throw new ForbiddenException('Only patients can accept calls');
     }
 
     await this.getAuthorizedCall(callId, patient);
@@ -174,15 +157,10 @@ export class CallsService {
     patient: AuthenticatedUser,
   ): Promise<CallResponse> {
     if (patient.role !== 'patient') {
-      throw new ForbiddenException(
-        'Only patients can decline calls',
-      );
+      throw new ForbiddenException('Only patients can decline calls');
     }
 
-    const current = await this.getAuthorizedCall(
-      callId,
-      patient,
-    );
+    const current = await this.getAuthorizedCall(callId, patient);
 
     const call = await this.repository.transition(
       callId,
@@ -191,41 +169,23 @@ export class CallsService {
     );
 
     try {
-      await this.cloudflare.endMeeting(
-        current.cloudflare_meeting_id,
-      );
+      await this.cloudflare.endMeeting(current.cloudflare_meeting_id);
     } catch {
-      this.logger.error(
-        'Cloudflare meeting cleanup failed after decline',
-      );
+      this.logger.error('Cloudflare meeting cleanup failed after decline');
     }
 
     return this.toResponse(call);
   }
 
-  async end(
-    callId: string,
-    user: AuthenticatedUser,
-  ): Promise<CallResponse> {
-    const current = await this.getAuthorizedCall(
-      callId,
-      user,
-    );
+  async end(callId: string, user: AuthenticatedUser): Promise<CallResponse> {
+    const current = await this.getAuthorizedCall(callId, user);
 
-    if (
-      current.status === 'ended' ||
-      current.status === 'declined'
-    ) {
+    if (current.status === 'ended' || current.status === 'declined') {
       return this.toResponse(current);
     }
 
-    if (
-      current.status === 'ringing' &&
-      user.role !== 'doctor'
-    ) {
-      throw new ForbiddenException(
-        'Patients must decline incoming calls',
-      );
+    if (current.status === 'ringing' && user.role !== 'doctor') {
+      throw new ForbiddenException('Patients must decline incoming calls');
     }
 
     const call = await this.repository.transition(
@@ -235,72 +195,50 @@ export class CallsService {
     );
 
     try {
-      await this.cloudflare.endMeeting(
-        current.cloudflare_meeting_id,
-      );
+      await this.cloudflare.endMeeting(current.cloudflare_meeting_id);
     } catch {
-      this.logger.error(
-        'Cloudflare meeting cleanup failed after call end',
-      );
+      this.logger.error('Cloudflare meeting cleanup failed after call end');
     }
 
     return this.toResponse(call);
   }
 
-  async getParticipantToken(
-    callId: string,
-    user: AuthenticatedUser,
-  ) {
-    const call = await this.getAuthorizedCall(
-      callId,
-      user,
-    );
+  async getParticipantToken(callId: string, user: AuthenticatedUser) {
+    const call = await this.getAuthorizedCall(callId, user);
 
-    if (
-      call.status !== 'accepted' &&
-      call.status !== 'active'
-    ) {
-      throw new ConflictException(
-        'Call is not ready to join',
-      );
+    if (call.status !== 'accepted' && call.status !== 'active') {
+      throw new ConflictException('Call is not ready to join');
     }
 
-    const existingParticipantId =
-      await this.repository.findParticipant(
-        call.id,
-        user.id,
-      );
-
-    if (existingParticipantId) {
-  this.logger.debug(
-    `Refreshing existing participant for ${call.call_type} call`,
-  );
-
-  const token =
-    await this.cloudflare.refreshParticipantToken(
-      call.cloudflare_meeting_id,
-      existingParticipantId,
-    );
-
-  return {
-    callId: call.id,
-    token,
-  };
-}
-
-    const participant =
-      await this.cloudflare.addParticipant(
-        call.cloudflare_meeting_id,
-        user.id,
-        user.fullName,
-        call.call_type,
-      );
-
-    await this.repository.saveParticipant(
+    const existingParticipantId = await this.repository.findParticipant(
       call.id,
       user.id,
-      participant.id,
     );
+
+    if (existingParticipantId) {
+      this.logger.debug(
+        `Refreshing existing participant for ${call.call_type} call`,
+      );
+
+      const token = await this.cloudflare.refreshParticipantToken(
+        call.cloudflare_meeting_id,
+        existingParticipantId,
+      );
+
+      return {
+        callId: call.id,
+        token,
+      };
+    }
+
+    const participant = await this.cloudflare.addParticipant(
+      call.cloudflare_meeting_id,
+      user.id,
+      user.fullName,
+      call.call_type,
+    );
+
+    await this.repository.saveParticipant(call.id, user.id, participant.id);
 
     return {
       callId: call.id,
@@ -308,95 +246,68 @@ export class CallsService {
     };
   }
 
-  private getCallOutcome(
-  call: CallRecord,
-): string {
-  switch (call.status) {
-    case 'ringing':
-      return 'ringing';
+  private getCallOutcome(call: CallRecord): string {
+    switch (call.status) {
+      case 'ringing':
+        return 'ringing';
 
-    case 'accepted':
-    case 'active':
-      return 'in_progress';
+      case 'accepted':
+      case 'active':
+        return 'in_progress';
 
-    case 'declined':
-      return 'declined';
+      case 'declined':
+        return 'declined';
 
-    case 'failed':
-      return 'failed';
+      case 'failed':
+        return 'failed';
 
-    case 'ended':
-      return call.started_at
-        ? 'answered'
-        : 'cancelled';
+      case 'ended':
+        return call.started_at ? 'answered' : 'cancelled';
 
-    default:
-      return 'unknown';
-  }
-}
-
-private calculateDuration(
-  call: CallRecord,
-): number | null {
-  if (
-    call.status !== 'ended' ||
-    !call.started_at ||
-    !call.ended_at
-  ) {
-    return null;
+      default:
+        return 'unknown';
+    }
   }
 
-  const startedAt = new Date(
-    call.started_at,
-  ).getTime();
+  private calculateDuration(call: CallRecord): number | null {
+    if (call.status !== 'ended' || !call.started_at || !call.ended_at) {
+      return null;
+    }
 
-  const endedAt = new Date(
-    call.ended_at,
-  ).getTime();
+    const startedAt = new Date(call.started_at).getTime();
 
-  if (
-    !Number.isFinite(startedAt) ||
-    !Number.isFinite(endedAt)
-  ) {
-    return null;
+    const endedAt = new Date(call.ended_at).getTime();
+
+    if (!Number.isFinite(startedAt) || !Number.isFinite(endedAt)) {
+      return null;
+    }
+
+    return Math.max(0, Math.floor((endedAt - startedAt) / 1000));
   }
 
-  return Math.max(
-    0,
-    Math.floor((endedAt - startedAt) / 1000),
-  );
-}
+  async getPatientCallHistory(patientId: string, doctor: AuthenticatedUser) {
+    if (doctor.role !== 'doctor') {
+      throw new ForbiddenException(
+        'Only doctors can access patient call history',
+      );
+    }
 
-  async getPatientCallHistory(
-  patientId: string,
-  doctor: AuthenticatedUser,
-) {
-  if (doctor.role !== 'doctor') {
-    throw new ForbiddenException(
-      'Only doctors can access patient call history',
+    await this.patientsService.findOne(patientId, doctor);
+
+    const calls = await this.repository.findHistoryByPatient(
+      patientId,
+      doctor.id,
+      doctor.accessToken,
     );
+
+    return calls.map((call) => ({
+      ...this.toResponse(call),
+
+      outcome: this.getCallOutcome(call),
+
+      durationSeconds: this.calculateDuration(call),
+    }));
   }
-
-  // Reuse existing patient authorization.
-  await this.patientsService.findOne(
-    patientId,
-    doctor,
-  );
-
-  const calls = await this.repository.findHistoryByPatient(
-    patientId,
-    doctor.id,
-    doctor.accessToken,
-  );
-
-  return calls.map((call) => ({
-    ...this.toResponse(call),
-
-    outcome: this.getCallOutcome(call),
-
-    durationSeconds: this.calculateDuration(call),
-  }));
-}
 
   private toResponse(call: CallRecord): CallResponse {
     return {

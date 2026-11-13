@@ -14,7 +14,6 @@ export class MedicalRecordsService {
   ) {}
 
   async findByPatient(patientId: string, doctor: AuthenticatedUser) {
-    // Verify that this patient belongs to the doctor.
     await this.patientsService.findOne(patientId, doctor);
 
     const records = await this.recordsRepository.findByPatient(

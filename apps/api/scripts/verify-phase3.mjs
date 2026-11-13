@@ -2,27 +2,17 @@ import assert from 'node:assert/strict';
 
 import { createClient } from '@supabase/supabase-js';
 
-const {
-  SUPABASE_URL,
-  SUPABASE_PUBLISHABLE_KEY,
-  DEMO_PASSWORD,
-} = process.env;
+const { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, DEMO_PASSWORD } = process.env;
 
-const apiUrl =
-  process.env.API_URL ??
-  'http://localhost:3001/api/v1';
+const apiUrl = process.env.API_URL ?? 'http://localhost:3001/api/v1';
 
 async function login(email) {
-  const supabase = createClient(
-    SUPABASE_URL,
-    SUPABASE_PUBLISHABLE_KEY,
-  );
+  const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-  const { data, error } =
-    await supabase.auth.signInWithPassword({
-      email,
-      password: DEMO_PASSWORD,
-    });
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password: DEMO_PASSWORD,
+  });
 
   if (error || !data.session) {
     throw new Error(`Login failed: ${email}`);
@@ -47,41 +37,25 @@ async function request(path, token, options = {}) {
 }
 
 async function main() {
-  const doctor1 = await login(
-    'doctor1@clinic-demo.example',
-  );
+  const doctor1 = await login('doctor1@clinic-demo.example');
 
-  const doctor2 = await login(
-    'doctor2@clinic-demo.example',
-  );
+  const doctor2 = await login('doctor2@clinic-demo.example');
 
-  const patient = await login(
-    'patient01@clinic-demo.example',
-  );
+  const patient = await login('patient01@clinic-demo.example');
 
-  const patients = await request(
-    '/patients',
-    doctor1,
-  );
+  const patients = await request('/patients', doctor1);
 
   assert.equal(patients.status, 200);
 
   const patientId = patients.body.data[0].id;
 
-  // Read medical records.
-
-  const records = await request(
-    `/patients/${patientId}/records`,
-    doctor1,
-  );
+  const records = await request(`/patients/${patientId}/records`, doctor1);
 
   assert.equal(records.status, 200);
   assert.ok(Array.isArray(records.body.labResults));
   assert.ok(Array.isArray(records.body.imagingReports));
 
   console.log('PASS: Medical records');
-
-  // Create prescription.
 
   const prescription = {
     medicationName: 'TEST_MEDICATION_NOT_FOR_USE',
@@ -104,8 +78,6 @@ async function main() {
 
   console.log('PASS: Prescription creation');
 
-  // Verify persistence.
-
   const history = await request(
     `/patients/${patientId}/prescriptions`,
     doctor1,
@@ -113,15 +85,9 @@ async function main() {
 
   assert.equal(history.status, 200);
 
-  assert.ok(
-    history.body.some(
-      (item) => item.id === created.body.id,
-    ),
-  );
+  assert.ok(history.body.some((item) => item.id === created.body.id));
 
   console.log('PASS: Prescription persistence');
-
-  // Reject another doctor.
 
   const unauthorized = await request(
     `/patients/${patientId}/prescriptions`,
@@ -135,8 +101,6 @@ async function main() {
   assert.equal(unauthorized.status, 404);
 
   console.log('PASS: Cross-doctor write blocked');
-
-  // Reject patient prescription creation.
 
   const patientAttempt = await request(
     `/patients/${patientId}/prescriptions`,
