@@ -26,6 +26,18 @@ export class PrescriptionsService {
     return prescriptions.map((record) => this.toResponse(record));
   }
 
+  async getMyPrescriptions(user: AuthenticatedUser) {
+  const prescriptions =
+    await this.prescriptionsRepository.findForPatientUser(
+      user.id,
+      user.accessToken,
+    );
+
+  return prescriptions.map((prescription) =>
+    this.toResponse(prescription),
+  );
+}
+
   async create(
     patientId: string,
     doctor: AuthenticatedUser,

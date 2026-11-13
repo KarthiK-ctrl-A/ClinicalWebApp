@@ -19,6 +19,7 @@ import { CurrentUser } from '@/types/clinic';
 import { IncomingCallCenter } from '@/features/calls/components/incoming-call-center';
 
 import Link from 'next/link';
+import { Pill } from 'lucide-react';
 
 export default function PatientLayout({
   children,
@@ -110,6 +111,13 @@ export default function PatientLayout({
               >
                 Messages
               </Link>
+              <Link
+                href="/patient/prescriptions"
+                className="text-sm font-medium hover:text-blue-600"
+                >
+                Prescriptions
+              </Link>
+
             </nav>
 
           <Button
