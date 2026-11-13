@@ -11,18 +11,10 @@ import { MessagingService } from './services/messaging.service';
 import { MessagingRepository } from './repositories/messaging.repository';
 
 @Module({
-  imports: [
-    DatabaseModule,
-    PatientsModule,
-  ],
+  imports: [DatabaseModule, PatientsModule],
 
-  controllers: [
-    MessagingController,
-  ],
+  controllers: [MessagingController],
 
-  providers: [
-    MessagingService,
-    MessagingRepository,
-  ],
+  providers: [MessagingService, MessagingRepository],
 })
 export class MessagingModule {}

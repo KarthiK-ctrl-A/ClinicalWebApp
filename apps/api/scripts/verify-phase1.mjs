@@ -40,17 +40,11 @@ async function getPatients(client) {
   return data;
 }
 
-const doctor1 = await login(
-  'doctor1@clinic-demo.example'
-);
+const doctor1 = await login('doctor1@clinic-demo.example');
 
-const doctor2 = await login(
-  'doctor2@clinic-demo.example'
-);
+const doctor2 = await login('doctor2@clinic-demo.example');
 
-const patient1 = await login(
-  'patient01@clinic-demo.example'
-);
+const patient1 = await login('patient01@clinic-demo.example');
 
 const doctor1Patients = await getPatients(doctor1);
 const doctor2Patients = await getPatients(doctor2);
@@ -71,10 +65,7 @@ if (error) {
   throw new Error(error.message);
 }
 
-console.log(
-  'Doctor 1 accessing Doctor 2 patient:',
-  unauthorized.length
-);
+console.log('Doctor 1 accessing Doctor 2 patient:', unauthorized.length);
 
 const passed =
   doctor1Patients.length === 20 &&

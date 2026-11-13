@@ -1,12 +1,7 @@
 export type CallType = 'audio' | 'video';
 
 export type CallStatus =
-  | 'ringing'
-  | 'accepted'
-  | 'active'
-  | 'declined'
-  | 'ended'
-  | 'failed';
+  'ringing' | 'accepted' | 'active' | 'declined' | 'ended' | 'failed';
 
 export interface CallRecord {
   id: string;

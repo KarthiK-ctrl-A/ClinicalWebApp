@@ -1,19 +1,8 @@
-import { Injectable, InternalServerErrorException,   NotFoundException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 
 import { SupabaseService } from '../../../database/supabase.service';
 
 import { CreatePrescriptionDto } from '../dto/create-prescription.dto';
-
-export interface PatientPrescriptionRecord {
-  id: string;
-  medication_name: string;
-  dosage: string;
-  frequency: string;
-  duration_days: number | null;
-  instructions: string | null;
-  status: string;
-  prescribed_at: string;
-}
 
 @Injectable()
 export class PrescriptionsRepository {
@@ -48,50 +37,6 @@ export class PrescriptionsRepository {
     return data ?? [];
   }
 
-  async findForPatientUser(
-  userId: string,
-  accessToken: string,
-): Promise<PatientPrescriptionRecord[]> {
-  const client = this.supabase.forUser(accessToken);
-
-  // Identify the authenticated patient's record
-  const { data: patient, error: patientError } = await client
-    .from('patients')
-    .select('id')
-    .eq('user_id', userId)
-    .single();
-
-  if (patientError || !patient) {
-    throw new NotFoundException(
-      'Patient record not found',
-    );
-  }
-
-  // Retrieve only this patient's prescriptions
-  const { data, error } = await client
-    .from('prescriptions')
-    .select(`
-      id,
-      medication_name,
-      dosage,
-      frequency,
-      duration_days,
-      instructions,
-      status,
-      prescribed_at
-    `)
-    .eq('patient_id', patient.id)
-    .order('prescribed_at', { ascending: false });
-
-  if (error) {
-    throw new InternalServerErrorException(
-      'Unable to retrieve patient prescriptions',
-    );
-  }
-
-  return (data ?? []) as PatientPrescriptionRecord[];
-  }
-
   async create(
     patientId: string,
     doctorId: string,
@@ -120,7 +65,4 @@ export class PrescriptionsRepository {
 
     return data;
   }
-
-
-
 }

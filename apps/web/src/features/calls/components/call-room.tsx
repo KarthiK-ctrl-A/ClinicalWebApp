@@ -1,30 +1,19 @@
 'use client';
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { getErrorMessage } from '@/lib/error-message';
 
-import {
-  RealtimeKitProvider,
-  useRealtimeKitClient,
-} from '@cloudflare/realtimekit-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import {
-  RtkMeeting,
-} from '@cloudflare/realtimekit-react-ui';
+import { RealtimeKitProvider, useRealtimeKitClient } from '@cloudflare/realtimekit-react';
+
+import { RtkMeeting } from '@cloudflare/realtimekit-react-ui';
 
 import { Button } from '@/components/ui/button';
 
 import { clinicApi } from '@/lib/api/clinic-api';
 
-import type { CallType } from '../types/call';
-
 interface CallRoomProps {
   callId: string;
-  callType: CallType;
   onEnded: () => void;
   onExit: () => void;
 }
@@ -48,7 +37,6 @@ export function CallRoom(props: CallRoomProps) {
 
 function CallRoomSession({
   callId,
-  callType,
   onEnded,
   onExit,
   onRetry,
@@ -69,12 +57,9 @@ function CallRoomSession({
 
     async function initialize() {
       try {
-        const response = await clinicApi<ParticipantToken>(
-          `/api/v1/calls/${callId}/token`,
-          {
-            method: 'POST',
-          },
-        );
+        const response = await clinicApi<ParticipantToken>(`/api/v1/calls/${callId}/token`, {
+          method: 'POST',
+        });
 
         if (!active) return;
 
@@ -83,11 +68,7 @@ function CallRoomSession({
         });
       } catch (error) {
         if (active) {
-          setInitError(
-            error instanceof Error
-              ? error.message
-              : 'Unable to initialize consultation',
-          );
+          setInitError(getErrorMessage(error, 'Unable to initialize consultation'));
         }
       } finally {
         if (active) {
@@ -111,12 +92,9 @@ function CallRoomSession({
     setActionError('');
 
     try {
-      await clinicApi(
-        `/api/v1/calls/${callId}/end`,
-        {
-          method: 'POST',
-        },
-      );
+      await clinicApi(`/api/v1/calls/${callId}/end`, {
+        method: 'POST',
+      });
 
       if (meeting) {
         await meeting.leave();
@@ -126,9 +104,7 @@ function CallRoomSession({
     } catch {
       endingRef.current = false;
 
-      setActionError(
-        'Unable to end the call. Please try again.',
-      );
+      setActionError('Unable to end the call. Please try again.');
     } finally {
       setEnding(false);
     }
@@ -137,15 +113,8 @@ function CallRoomSession({
   useEffect(() => {
     if (!meeting) return;
 
-    const handleRoomLeft = ({
-      state,
-    }: {
-      state: string;
-    }) => {
-      if (
-        ['left', 'ended', 'kicked'].includes(state) &&
-        !endingRef.current
-      ) {
+    const handleRoomLeft = ({ state }: { state: string }) => {
+      if (['left', 'ended', 'kicked'].includes(state) && !endingRef.current) {
         void endCall();
       }
     };
@@ -162,18 +131,11 @@ function CallRoomSession({
   if (loading) {
     return (
       <div className="space-y-4 rounded-xl bg-white p-8">
-        <h2 className="text-xl font-semibold">
-          Connecting to consultation
-        </h2>
+        <h2 className="text-xl font-semibold">Connecting to consultation</h2>
 
-        <p className="text-slate-500">
-          Preparing your audio/video connection...
-        </p>
+        <p className="text-slate-500">Preparing your audio/video connection...</p>
 
-        <Button
-          variant="outline"
-          onClick={onExit}
-        >
+        <Button variant="outline" onClick={onExit}>
           Return to Dashboard
         </Button>
       </div>
@@ -183,40 +145,26 @@ function CallRoomSession({
   if (initError || !meeting) {
     return (
       <div className="mx-auto max-w-lg space-y-5 rounded-xl bg-white p-8 text-center shadow-lg">
-        <div className="text-4xl">
-          ⚠️
-        </div>
+        <div className="text-4xl">⚠️</div>
 
-        <h2 className="text-2xl font-semibold">
-          Unable to Join Consultation
-        </h2>
+        <h2 className="text-2xl font-semibold">Unable to Join Consultation</h2>
 
         <p role="alert" className="text-sm text-red-600">
           {initError || 'Meeting initialization failed'}
         </p>
 
         <p className="text-sm text-slate-500">
-          Your consultation could not be connected.
-          You can retry or return to your dashboard.
+          Your consultation could not be connected. You can retry or return to your dashboard.
         </p>
 
         <div className="flex flex-wrap justify-center gap-3">
-          <Button onClick={onRetry}>
-            Retry Connection
-          </Button>
+          <Button onClick={onRetry}>Retry Connection</Button>
 
-          <Button
-            variant="outline"
-            onClick={onExit}
-          >
+          <Button variant="outline" onClick={onExit}>
             Return to Dashboard
           </Button>
 
-          <Button
-            variant="destructive"
-            disabled={ending}
-            onClick={() => void endCall()}
-          >
+          <Button variant="destructive" disabled={ending} onClick={() => void endCall()}>
             {ending ? 'Ending...' : 'End Call'}
           </Button>
         </div>
@@ -234,27 +182,16 @@ function CallRoomSession({
     <div className="space-y-4">
       <div className="h-[550px] overflow-hidden rounded-xl border bg-slate-950">
         <RealtimeKitProvider value={meeting}>
-          <RtkMeeting
-            meeting={meeting}
-            mode="fill"
-            showSetupScreen={true}
-          />
+          <RtkMeeting meeting={meeting} mode="fill" showSetupScreen={true} />
         </RealtimeKitProvider>
       </div>
 
       <div className="flex flex-wrap justify-end gap-3">
-        <Button
-          variant="outline"
-          onClick={onExit}
-        >
+        <Button variant="outline" onClick={onExit}>
           Return to Dashboard
         </Button>
 
-        <Button
-          variant="destructive"
-          disabled={ending}
-          onClick={() => void endCall()}
-        >
+        <Button variant="destructive" disabled={ending} onClick={() => void endCall()}>
           {ending ? 'Ending...' : 'End Consultation'}
         </Button>
       </div>

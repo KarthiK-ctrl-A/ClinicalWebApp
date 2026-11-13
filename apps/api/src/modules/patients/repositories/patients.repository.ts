@@ -112,27 +112,26 @@ export class PatientsRepository {
   }
 
   async findByUserId(
-  userId: string,
-  accessToken: string,
-): Promise<{
-  id: string;
-  doctor_id: string;
-} | null> {
-  const client = this.supabase.forUser(accessToken);
+    userId: string,
+    accessToken: string,
+  ): Promise<{
+    id: string;
+    doctor_id: string;
+  } | null> {
+    const client = this.supabase.forUser(accessToken);
 
-  const { data, error } = await client
-    .from('patients')
-    .select('id, doctor_id')
-    .eq('user_id', userId)
-    .maybeSingle();
+    const { data, error } = await client
+      .from('patients')
+      .select('id, doctor_id')
+      .eq('user_id', userId)
+      .maybeSingle();
 
-  if (error) {
-    throw new InternalServerErrorException(
-      'Unable to retrieve patient information',
-    );
+    if (error) {
+      throw new InternalServerErrorException(
+        'Unable to retrieve patient information',
+      );
+    }
+
+    return data;
   }
-
-  return data;
-}
-
 }

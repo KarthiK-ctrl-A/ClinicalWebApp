@@ -40,10 +40,10 @@ import { CallsModule } from './modules/calls/calls.module';
 
         SUPABASE_PUBLISHABLE_KEY: Joi.string().required(),
 
-        SUPABASE_SECRET_KEY: Joi.string().optional(),
+        SUPABASE_SECRET_KEY: Joi.string().required(),
 
         DEMO_PASSWORD: Joi.string().optional(),
-        
+
         CLOUDFLARE_ACCOUNT_ID: Joi.string().required(),
 
         CLOUDFLARE_REALTIMEKIT_APP_ID: Joi.string().required(),
@@ -53,7 +53,6 @@ import { CallsModule } from './modules/calls/calls.module';
         CLOUDFLARE_AUDIO_PRESET: Joi.string().required(),
 
         CLOUDFLARE_VIDEO_PRESET: Joi.string().required(),
-
       }).unknown(true),
     }),
 

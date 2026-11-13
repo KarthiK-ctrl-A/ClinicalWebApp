@@ -10,14 +10,10 @@ import { PrescriptionsService } from '../services/prescriptions.service';
 @Controller('prescriptions')
 @Roles('patient')
 export class PatientPrescriptionsController {
-  constructor(
-    private readonly prescriptionsService: PrescriptionsService,
-  ) {}
+  constructor(private readonly prescriptionsService: PrescriptionsService) {}
 
   @Get('me')
-  async getMyPrescriptions(
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
+  async getMyPrescriptions(@CurrentUser() user: AuthenticatedUser) {
     return this.prescriptionsService.getMyPrescriptions(user);
   }
 }

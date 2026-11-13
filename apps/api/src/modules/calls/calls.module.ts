@@ -10,21 +10,14 @@ import { CallsController } from './controllers/calls.controller';
 
 import { CallsService } from './services/calls.service';
 
-import { CallsRepository } from './repsositories/calls.repository';
+import { CallsRepository } from './repositories/calls.repository';
 
 @Module({
-  imports: [
-    DatabaseModule,
-    PatientsModule,
-    CloudflareModule,
-  ],
+  imports: [DatabaseModule, PatientsModule, CloudflareModule],
 
   controllers: [CallsController],
 
-  providers: [
-    CallsService,
-    CallsRepository,
-  ],
+  providers: [CallsService, CallsRepository],
 
   exports: [CallsService],
 })

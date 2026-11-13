@@ -1,25 +1,14 @@
 'use client';
 
-import {
-  useEffect,
-  useState,
-} from 'react';
+import { getErrorMessage } from '@/lib/error-message';
+
+import { useEffect, useState } from 'react';
 
 import Link from 'next/link';
 
-import {
-  CalendarDays,
-  MessageSquare,
-  Stethoscope,
-  Video,
-} from 'lucide-react';
+import { CalendarDays, MessageSquare, Stethoscope, Video } from 'lucide-react';
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { Button } from '@/components/ui/button';
 
@@ -46,8 +35,7 @@ interface PatientDashboard {
 }
 
 export default function PatientDashboardPage() {
-  const [dashboard, setDashboard] =
-    useState<PatientDashboard | null>(null);
+  const [dashboard, setDashboard] = useState<PatientDashboard | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -57,20 +45,14 @@ export default function PatientDashboardPage() {
 
     async function loadDashboard() {
       try {
-        const result = await clinicApi<PatientDashboard>(
-          '/api/v1/patients/me/dashboard',
-        );
+        const result = await clinicApi<PatientDashboard>('/api/v1/patients/me/dashboard');
 
         if (active) {
           setDashboard(result);
         }
       } catch (err) {
         if (active) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : 'Unable to load dashboard',
-          );
+          setError(getErrorMessage(err, 'Unable to load dashboard'));
         }
       } finally {
         if (active) {
@@ -87,56 +69,36 @@ export default function PatientDashboardPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="p-8">
-        Loading your dashboard...
-      </div>
-    );
+    return <div className="p-8">Loading your dashboard...</div>;
   }
 
   if (error || !dashboard) {
     return (
       <div className="space-y-4 rounded-xl border bg-white p-8">
-        <h2 className="text-xl font-semibold">
-          Dashboard Unavailable
-        </h2>
+        <h2 className="text-xl font-semibold">Dashboard Unavailable</h2>
 
         <p role="alert" className="text-red-600">
           {error || 'Unable to retrieve dashboard'}
         </p>
 
-        <Button
-          onClick={() => window.location.reload()}
-        >
-          Try Again
-        </Button>
+        <Button onClick={() => window.location.reload()}>Try Again</Button>
       </div>
     );
   }
 
-  const { patient, assignedDoctor, nextConsultation } =
-    dashboard;
+  const { patient, assignedDoctor, nextConsultation } = dashboard;
 
   return (
     <div className="space-y-8">
-      {/* Welcome */}
-
       <section>
-        <h1 className="text-3xl font-bold text-slate-900">
-          Welcome, {patient.fullName}
-        </h1>
+        <h1 className="text-3xl font-bold text-slate-900">Welcome, {patient.fullName}</h1>
 
         <p className="mt-2 text-slate-500">
-          Manage your care, upcoming consultations,
-          and messages.
+          Manage your care, upcoming consultations, and messages.
         </p>
       </section>
 
-      {/* Dashboard cards */}
-
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Assigned Doctor */}
-
         <Card className="shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -147,24 +109,19 @@ export default function PatientDashboardPage() {
 
           <CardContent className="space-y-3">
             <div>
-              <h3 className="text-xl font-semibold">
-                {assignedDoctor.fullName}
-              </h3>
+              <h3 className="text-xl font-semibold">{assignedDoctor.fullName}</h3>
 
               <p className="text-slate-500">
-                {assignedDoctor.specialty ??
-                  'Specialty not specified'}
+                {assignedDoctor.specialty ?? 'Specialty not specified'}
               </p>
             </div>
 
             <Button render={<Link href="/patient/messages" />}>
-                <MessageSquare className="mr-2 h-4 w-4" />
-                Message Doctor
+              <MessageSquare className="mr-2 h-4 w-4" />
+              Message Doctor
             </Button>
           </CardContent>
         </Card>
-
-        {/* Next Consultation */}
 
         <Card className="shadow-sm">
           <CardHeader>
@@ -175,12 +132,10 @@ export default function PatientDashboardPage() {
           </CardHeader>
 
           <CardContent className="space-y-3">
-            {nextConsultation ? (
+            {nextConsultation && (
               <>
                 <p className="text-lg font-semibold">
-                  {new Date(
-                    nextConsultation.scheduledAt,
-                  ).toLocaleString(undefined, {
+                  {new Date(nextConsultation.scheduledAt).toLocaleString(undefined, {
                     dateStyle: 'medium',
                     timeStyle: 'short',
                   })}
@@ -188,24 +143,19 @@ export default function PatientDashboardPage() {
 
                 <p className="flex items-center gap-2 text-sm text-slate-500">
                   <Video className="h-4 w-4" />
-                  {nextConsultation.mode === 'video'
-                    ? 'Video Consultation'
-                    : 'Audio Consultation'}
+                  {nextConsultation.mode === 'video' ? 'Video Consultation' : 'Audio Consultation'}
                 </p>
 
-                <p className="text-sm text-green-600">
-                  {nextConsultation.status}
-                </p>
+                <p className="text-sm text-green-600">{nextConsultation.status}</p>
               </>
-            ) : (
+            )}
+
+            {!nextConsultation && (
               <>
-                <p className="font-medium">
-                  No consultation scheduled
-                </p>
+                <p className="font-medium">No consultation scheduled</p>
 
                 <p className="text-sm text-slate-500">
-                  Your upcoming consultation
-                  will appear here when scheduled.
+                  Your upcoming consultation will appear here when scheduled.
                 </p>
               </>
             )}
@@ -213,13 +163,9 @@ export default function PatientDashboardPage() {
         </Card>
       </div>
 
-      {/* Quick Actions */}
-
       <Card>
         <CardHeader>
-          <CardTitle>
-            Quick Actions
-          </CardTitle>
+          <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
 
         <CardContent className="grid gap-4 md:grid-cols-2">
@@ -230,13 +176,9 @@ export default function PatientDashboardPage() {
             <MessageSquare className="h-6 w-6 text-blue-600" />
 
             <div>
-              <h3 className="font-semibold">
-                My Messages
-              </h3>
+              <h3 className="font-semibold">My Messages</h3>
 
-              <p className="text-sm text-slate-500">
-                View and reply to your doctor.
-              </p>
+              <p className="text-sm text-slate-500">View and reply to your doctor.</p>
             </div>
           </Link>
 
@@ -244,13 +186,10 @@ export default function PatientDashboardPage() {
             <Video className="h-6 w-6 text-blue-600" />
 
             <div>
-              <h3 className="font-semibold">
-                Consultations
-              </h3>
+              <h3 className="font-semibold">Consultations</h3>
 
               <p className="text-sm text-slate-500">
-                Incoming calls will appear here
-                when your doctor calls.
+                Incoming calls will appear here when your doctor calls.
               </p>
             </div>
           </div>

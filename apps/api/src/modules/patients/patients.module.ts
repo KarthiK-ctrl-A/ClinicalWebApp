@@ -19,7 +19,12 @@ import { PatientDashboardRepository } from './repositories/patient-dashboard.rep
 
   controllers: [PatientsController, PatientDashboardController],
 
-  providers: [PatientsService, PatientsRepository, PatientDashboardService, PatientDashboardRepository],
+  providers: [
+    PatientsService,
+    PatientsRepository,
+    PatientDashboardService,
+    PatientDashboardRepository,
+  ],
 
   exports: [PatientsService],
 })

@@ -10,8 +10,7 @@ import { MessageRecord } from '../interfaces/message.interface';
 
 @Injectable()
 export class MessagingRepository {
-  private readonly logger =
-    new Logger(MessagingRepository.name);
+  private readonly logger = new Logger(MessagingRepository.name);
 
   private readonly columns = `
     id,
@@ -22,9 +21,7 @@ export class MessagingRepository {
     created_at
   `;
 
-  constructor(
-    private readonly supabase: SupabaseService,
-  ) {}
+  constructor(private readonly supabase: SupabaseService) {}
 
   async findByPatient(
     patientId: string,
@@ -40,23 +37,12 @@ export class MessagingRepository {
       .limit(50);
 
     if (error) {
-      this.logger.error(
-        `Message query failed: ${error.code}`,
-      );
+      this.logger.error(`Message query failed: ${error.code}`);
 
-      throw new InternalServerErrorException(
-        'Unable to retrieve messages',
-      );
+      throw new InternalServerErrorException('Unable to retrieve messages');
     }
 
-    return (data ?? []).reverse().map((message) => ({
-      id: message.id,
-      patient_id: message.patient_id,
-      doctor_id: message.doctor_id,
-      sender_id: message.sender_id,
-      content: message.content,
-      created_at: message.created_at,
-    }));
+    return (data ?? []).reverse();
   }
 
   async create(
@@ -80,22 +66,11 @@ export class MessagingRepository {
       .single();
 
     if (error) {
-      this.logger.error(
-        `Message insert failed: ${error.code}`,
-      );
+      this.logger.error(`Message insert failed: ${error.code}`);
 
-      throw new InternalServerErrorException(
-        'Unable to send message',
-      );
+      throw new InternalServerErrorException('Unable to send message');
     }
 
-    return {
-      id: data.id,
-      patient_id: data.patient_id,
-      doctor_id: data.doctor_id,
-      sender_id: data.sender_id,
-      content: data.content,
-      created_at: data.created_at,
-    };
+    return data;
   }
 }

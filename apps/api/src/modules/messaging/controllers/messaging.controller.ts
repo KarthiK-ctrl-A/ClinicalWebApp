@@ -19,9 +19,7 @@ import { MessagingService } from '../services/messaging.service';
 
 @Controller('messages')
 export class MessagingController {
-  constructor(
-    private readonly messagingService: MessagingService,
-  ) {}
+  constructor(private readonly messagingService: MessagingService) {}
 
   @Get('patients/:patientId')
   @Roles('doctor')
@@ -32,10 +30,7 @@ export class MessagingController {
     @CurrentUser()
     doctor: AuthenticatedUser,
   ) {
-    return this.messagingService.getDoctorConversation(
-      patientId,
-      doctor,
-    );
+    return this.messagingService.getDoctorConversation(patientId, doctor);
   }
 
   @Post('patients/:patientId')
@@ -50,11 +45,7 @@ export class MessagingController {
     @Body()
     dto: SendMessageDto,
   ) {
-    return this.messagingService.sendAsDoctor(
-      patientId,
-      doctor,
-      dto,
-    );
+    return this.messagingService.sendAsDoctor(patientId, doctor, dto);
   }
 
   @Get('me')
@@ -63,9 +54,7 @@ export class MessagingController {
     @CurrentUser()
     patient: AuthenticatedUser,
   ) {
-    return this.messagingService.getPatientConversation(
-      patient,
-    );
+    return this.messagingService.getPatientConversation(patient);
   }
 
   @Post('me')
@@ -77,9 +66,6 @@ export class MessagingController {
     @Body()
     dto: SendMessageDto,
   ) {
-    return this.messagingService.sendAsPatient(
-      patient,
-      dto,
-    );
+    return this.messagingService.sendAsPatient(patient, dto);
   }
 }

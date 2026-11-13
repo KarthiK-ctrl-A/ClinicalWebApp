@@ -1,7 +1,4 @@
-import {
-  ForbiddenException,
-  Injectable,
-} from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 
 import { AuthenticatedUser } from '../../../common/interfaces/authenticated-user.interface';
 
@@ -29,10 +26,7 @@ export class MessagingService {
     patientId: string,
     doctor: AuthenticatedUser,
   ): Promise<ConversationResponse> {
-    const conversation = await this.forDoctor(
-      patientId,
-      doctor,
-    );
+    const conversation = await this.forDoctor(patientId, doctor);
 
     return this.loadConversation(conversation, doctor);
   }
@@ -50,10 +44,7 @@ export class MessagingService {
     doctor: AuthenticatedUser,
     dto: SendMessageDto,
   ): Promise<MessageResponse> {
-    const conversation = await this.forDoctor(
-      patientId,
-      doctor,
-    );
+    const conversation = await this.forDoctor(patientId, doctor);
 
     return this.send(conversation, doctor, dto);
   }
@@ -72,15 +63,10 @@ export class MessagingService {
     doctor: AuthenticatedUser,
   ): Promise<Conversation> {
     if (doctor.role !== 'doctor') {
-      throw new ForbiddenException(
-        'Doctor access required',
-      );
+      throw new ForbiddenException('Doctor access required');
     }
 
-    await this.patientsService.findOne(
-      patientId,
-      doctor,
-    );
+    await this.patientsService.findOne(patientId, doctor);
 
     return {
       patientId,
@@ -88,17 +74,12 @@ export class MessagingService {
     };
   }
 
-  private async forPatient(
-    patient: AuthenticatedUser,
-  ): Promise<Conversation> {
+  private async forPatient(patient: AuthenticatedUser): Promise<Conversation> {
     if (patient.role !== 'patient') {
-      throw new ForbiddenException(
-        'Patient access required',
-      );
+      throw new ForbiddenException('Patient access required');
     }
 
-    const record =
-      await this.patientsService.findOwnPatient(patient);
+    const record = await this.patientsService.findOwnPatient(patient);
 
     return {
       patientId: record.id,
@@ -110,17 +91,14 @@ export class MessagingService {
     conversation: Conversation,
     user: AuthenticatedUser,
   ): Promise<ConversationResponse> {
-    const messages =
-      await this.messagingRepository.findByPatient(
-        conversation.patientId,
-        user.accessToken,
-      );
+    const messages = await this.messagingRepository.findByPatient(
+      conversation.patientId,
+      user.accessToken,
+    );
 
     return {
       ...conversation,
-      messages: messages.map((message) =>
-        this.toResponse(message),
-      ),
+      messages: messages.map((message) => this.toResponse(message)),
     };
   }
 
@@ -140,9 +118,7 @@ export class MessagingService {
     return this.toResponse(message);
   }
 
-  private toResponse(
-    message: MessageRecord,
-  ): MessageResponse {
+  private toResponse(message: MessageRecord): MessageResponse {
     return {
       id: message.id,
       patientId: message.patient_id,

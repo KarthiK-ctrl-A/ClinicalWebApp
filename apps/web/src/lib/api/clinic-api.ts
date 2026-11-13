@@ -12,10 +12,7 @@ export class ApiError extends Error {
   }
 }
 
-export async function clinicApi<T>(
-  path: string,
-  options: RequestInit = {},
-): Promise<T> {
+export async function clinicApi<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (!API_URL) {
     throw new Error('API URL is not configured');
   }
@@ -28,18 +25,12 @@ export async function clinicApi<T>(
   } = await supabase.auth.getSession();
 
   if (error || !session) {
-    throw new ApiError(
-      'Authentication session expired',
-      401,
-    );
+    throw new ApiError('Authentication session expired', 401);
   }
 
   const headers = new Headers(options.headers);
 
-  headers.set(
-    'Authorization',
-    `Bearer ${session.access_token}`,
-  );
+  headers.set('Authorization', `Bearer ${session.access_token}`);
 
   if (options.body) {
     headers.set('Content-Type', 'application/json');
@@ -51,15 +42,13 @@ export async function clinicApi<T>(
     cache: 'no-store',
   });
 
-  const result = await response
-    .json()
-    .catch(() => null);
+  const result = await response.json().catch(() => null);
 
   if (!response.ok) {
-    const message =
-      typeof result?.message === 'string'
-        ? result.message
-        : 'Unable to complete the request';
+    let message = 'Unable to complete the request';
+    if (typeof result?.message === 'string') {
+      message = result.message;
+    }
 
     throw new ApiError(message, response.status);
   }

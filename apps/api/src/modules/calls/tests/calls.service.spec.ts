@@ -1,30 +1,31 @@
 import { ForbiddenException } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
 
+import { CallsRepository } from '../repositories/calls.repository';
 import { CallsService } from '../services/calls.service';
+import { PatientsService } from '../../patients/services/patients.service';
+import { CloudflareRealtimeKitService } from '../../../integrations/cloudflare/cloudflare-realtimekit.service';
 
 describe('CallsService', () => {
   let service: CallsService;
-
-  const repository = {
-    create: jest.fn(),
-  };
-
-  const patientsService = {
-    findOne: jest.fn(),
-  };
 
   const cloudflare = {
     createMeeting: jest.fn(),
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
 
-    service = new CallsService(
-      repository as any,
-      patientsService as any,
-      cloudflare as any,
-    );
+    const module = await Test.createTestingModule({
+      providers: [
+        CallsService,
+        { provide: CallsRepository, useValue: {} },
+        { provide: PatientsService, useValue: {} },
+        { provide: CloudflareRealtimeKitService, useValue: cloudflare },
+      ],
+    }).compile();
+
+    service = module.get(CallsService);
   });
 
   it('prevents patients from initiating calls', async () => {
@@ -43,8 +44,6 @@ describe('CallsService', () => {
       }),
     ).rejects.toThrow(ForbiddenException);
 
-    expect(
-      cloudflare.createMeeting,
-    ).not.toHaveBeenCalled();
+    expect(cloudflare.createMeeting).not.toHaveBeenCalled();
   });
 });

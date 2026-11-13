@@ -16,7 +16,7 @@ export class PrescriptionsService {
   ) {}
 
   async findByPatient(patientId: string, doctor: AuthenticatedUser) {
-    await this.verifyPatientAccess(patientId, doctor);
+    await this.patientsService.findOne(patientId, doctor);
 
     const prescriptions = await this.prescriptionsRepository.findByPatient(
       patientId,
@@ -27,23 +27,21 @@ export class PrescriptionsService {
   }
 
   async getMyPrescriptions(user: AuthenticatedUser) {
-  const prescriptions =
-    await this.prescriptionsRepository.findForPatientUser(
-      user.id,
+    const patient = await this.patientsService.findOwnPatient(user);
+    const prescriptions = await this.prescriptionsRepository.findByPatient(
+      patient.id,
       user.accessToken,
     );
 
-  return prescriptions.map((prescription) =>
-    this.toResponse(prescription),
-  );
-}
+    return prescriptions.map((prescription) => this.toResponse(prescription));
+  }
 
   async create(
     patientId: string,
     doctor: AuthenticatedUser,
     dto: CreatePrescriptionDto,
   ) {
-    await this.verifyPatientAccess(patientId, doctor);
+    await this.patientsService.findOne(patientId, doctor);
 
     const prescription = await this.prescriptionsRepository.create(
       patientId,
@@ -53,13 +51,6 @@ export class PrescriptionsService {
     );
 
     return this.toResponse(prescription);
-  }
-
-  private async verifyPatientAccess(
-    patientId: string,
-    doctor: AuthenticatedUser,
-  ) {
-    await this.patientsService.findOne(patientId, doctor);
   }
 
   private toResponse(record: {
