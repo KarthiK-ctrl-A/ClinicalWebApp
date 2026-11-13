@@ -105,11 +105,15 @@ export class CloudflareRealtimeKitService {
     name: string,
     callType: CallType,
   ): Promise<CloudflareParticipant> {
-    const presetName = this.config.getOrThrow<string>(
-      callType === 'audio'
-        ? 'CLOUDFLARE_AUDIO_PRESET'
-        : 'CLOUDFLARE_VIDEO_PRESET',
-    );
+    let presetKey: string;
+
+    if (callType === 'audio') {
+        presetKey = 'CLOUDFLARE_AUDIO_PRESET';
+    } else {
+        presetKey = 'CLOUDFLARE_VIDEO_PRESET';
+    }
+
+    const presetName = this.config.getOrThrow<string>(presetKey);
 
     return this.request<CloudflareParticipant>(
       `/meetings/${meetingId}/participants`,

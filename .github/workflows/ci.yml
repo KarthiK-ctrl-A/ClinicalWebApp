@@ -1,0 +1,110 @@
+name: Clinic Application CI
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+
+  # =====================================
+  # Backend - NestJS
+  # =====================================
+
+  backend:
+    name: Backend Build and Tests
+
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: apps/api
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: apps/api/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Verify Node and Jest Versions
+        run: |
+          echo "Node.js version:"
+          node --version
+
+          echo "NPM version:"
+          npm --version
+
+          echo "Jest version:"
+          npx jest --version
+
+          echo "Installed testing dependencies:"
+          npm ls jest @nestjs/testing --depth=0
+
+          echo "Configured test command:"
+          node -p "require('./package.json').scripts.test"
+
+      - name: Run Lint
+        run: npm run lint --if-present
+
+      - name: Run Unit Tests
+        env:
+          NODE_OPTIONS: --experimental-vm-modules
+        run: npm run test -- --runInBand
+
+      - name: Build NestJS
+        run: npm run build
+
+  # =====================================
+  # Frontend - Next.js
+  # =====================================
+
+  frontend:
+    name: Frontend Build
+
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: apps/web
+
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-publishable-placeholder
+      NEXT_PUBLIC_API_URL: https://api.example.invalid
+      NEXT_TELEMETRY_DISABLED: '1'
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Next.js
+        run: npm run build

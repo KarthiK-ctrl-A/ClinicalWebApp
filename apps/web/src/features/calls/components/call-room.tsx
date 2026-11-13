@@ -20,8 +20,11 @@ import { Button } from '@/components/ui/button';
 
 import { clinicApi } from '@/lib/api/clinic-api';
 
+import type { CallType } from '../types/call';
+
 interface CallRoomProps {
   callId: string;
+  callType: CallType;
   onEnded: () => void;
   onExit: () => void;
 }
@@ -45,6 +48,7 @@ export function CallRoom(props: CallRoomProps) {
 
 function CallRoomSession({
   callId,
+  callType,
   onEnded,
   onExit,
   onRetry,

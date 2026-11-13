@@ -272,6 +272,7 @@ export function IncomingCallCenter() {
         <CallRoom
           key={call.id}
           callId={call.id}
+          callType={call.callType}
           onExit={() => {
             setMinimized(true);
           }}
